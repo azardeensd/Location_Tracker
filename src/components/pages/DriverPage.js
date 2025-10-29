@@ -526,7 +526,7 @@ const DriverPage = () => {
                     className={styles.submitBtn}
                     disabled={loading || !endForm.end_lat || !endForm.end_lng}
                   >
-                    {loading ? 'Ending...' : 'End Journey'}
+                    {loading ? 'Ending...' : 'End Trip'}
                   </button>
                 </div>
               </form>
