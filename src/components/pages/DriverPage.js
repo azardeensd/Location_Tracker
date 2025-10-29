@@ -431,25 +431,25 @@ const DriverPage = () => {
                 </div>
 
                 <div className={styles.formActions}>
+  <button 
+    type="submit"
+    className={styles.submitBtn}
+    disabled={loading || !startForm.start_lat || !startForm.start_lng || !startForm.vehicle_number}
+  >
+    {loading ? 'Starting...' : 'Start Trip'}
+  </button>
+                  
                   <button 
-                    type="button"
-                    className={styles.cancelBtn}
-                    onClick={() => {
-                      setShowStartPopup(false);
-                      setFilteredAgencies([]);
-                      setVehicles([]);
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit"
-                    className={styles.submitBtn}
-                    disabled={loading || !startForm.start_lat || !startForm.start_lng}
-                  >
-                    {loading ? 'Starting...' : 'Start Journey'}
-                  </button>
-                </div>
+    type="button"
+    className={styles.cancelBtn}
+    onClick={() => {
+      setShowStartPopup(false);
+      setFilteredAgencies([]);
+    }}
+  >
+    Cancel
+  </button>
+</div>
               </form>
             </div>
           </div>
