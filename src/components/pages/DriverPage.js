@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import styles from './DriverPage.module.css';
+import { sendTripEmail, initEmailJS } from '../services/email';
 
 const DriverPage = () => {
   const [agencies, setAgencies] = useState([]);
@@ -31,6 +32,7 @@ const DriverPage = () => {
   useEffect(() => {
     loadAgenciesAndPlants();
     checkActiveJourney();
+    initEmailJS(); // Initialize EmailJS
   }, []);
 
   const loadAgenciesAndPlants = async () => {
@@ -163,48 +165,52 @@ const DriverPage = () => {
   };
 
   const handleStartJourney = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  e.preventDefault();
+  setLoading(true);
 
-    try {
-      const journeyData = {
-        ...startForm,
-        agency_id: parseInt(startForm.agency_id),
-        vehicle_id: parseInt(startForm.vehicle_id),
-        plant: startForm.plant, // Store plant name directly
-        start_lat: parseFloat(startForm.start_lat),
-        start_lng: parseFloat(startForm.start_lng),
-        start_time: new Date().toISOString()
-      };
+  try {
+    // Find the selected vehicle to get its number
+    const selectedVehicle = vehicles.find(v => v.id === parseInt(startForm.vehicle_id));
+    
+    const journeyData = {
+      ...startForm,
+      agency_id: parseInt(startForm.agency_id),
+      vehicle_id: parseInt(startForm.vehicle_id),
+      vehicle_number: selectedVehicle?.vehicle_number, // Add vehicle number here
+      plant: startForm.plant,
+      start_lat: parseFloat(startForm.start_lat),
+      start_lng: parseFloat(startForm.start_lng),
+      start_time: new Date().toISOString()
+    };
 
-      console.log('Starting journey with data:', journeyData);
+    console.log('Starting journey with data:', journeyData);
 
-      const { data, error } = await api.startJourney(journeyData);
-      
-      if (!error && data) {
-        setActiveJourney(data);
-        setShowStartPopup(false);
-        setStartForm({ 
-          plant: '',
-          agency_id: '', 
-          vehicle_id: '', 
-          driver_name: '', 
-          driver_contact: '', 
-          start_lat: '', 
-          start_lng: '' 
-        });
-        setFilteredAgencies([]);
-        setVehicles([]);
-        alert('Journey started successfully!');
-      } else {
-        alert('Error starting journey: ' + error?.message);
-      }
-    } catch (error) {
-      alert('Error starting journey: ' + error.message);
-    } finally {
-      setLoading(false);
+    const { data, error } = await api.startJourney(journeyData);
+    
+    if (!error && data) {
+      setActiveJourney(data);
+      setShowStartPopup(false);
+      setStartForm({ 
+        plant: '',
+        agency_id: '', 
+        vehicle_id: '', 
+        driver_name: '', 
+        driver_contact: '', 
+        start_lat: '', 
+        start_lng: '' 
+      });
+      setFilteredAgencies([]);
+      setVehicles([]);
+      alert('Journey started successfully!');
+    } else {
+      alert('Error starting journey: ' + error?.message);
     }
-  };
+  } catch (error) {
+    alert('Error starting journey: ' + error.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleEndJourney = async (e) => {
     e.preventDefault();
@@ -230,13 +236,18 @@ const DriverPage = () => {
       const { data, error } = await api.endJourney(activeJourney.id, endData);
       
       if (!error && data) {
+        // Send email notification with proper data formatting
+        const emailResult = await sendCompletionEmail(data, distance, endTime);
+        
         setActiveJourney(null);
         setShowEndPopup(false);
         setEndForm({ end_lat: '', end_lng: '' });
         
-        // Simulate email sending
-        const agency = agencies.find(a => a.id === data.agency_id);
-        alert(`Journey completed! Distance: ${distance} km\nEmail has been sent to ${agency?.email || 'the head'}`);
+        if (emailResult.success) {
+          alert(`Journey completed! Distance: ${distance} km\nEmail notification has been sent successfully.`);
+        } else {
+          alert(`Journey completed! Distance: ${distance} km\nBut email failed to send: ${emailResult.message}`);
+        }
       } else {
         alert('Error ending journey: ' + error?.message);
       }
@@ -247,20 +258,109 @@ const DriverPage = () => {
     }
   };
 
+  // Email sending function
+  const sendCompletionEmail = async (journeyData, distance, endTime) => {
+    try {
+      const agency = agencies.find(a => a.id === journeyData.agency_id);
+      
+      if (!agency) {
+        return { success: false, message: 'Agency not found' };
+      }
+
+      // Make sure agency has an email
+      if (!agency.email) {
+        return { success: false, message: 'Agency email not available' };
+      }
+
+      // Calculate duration
+      const startTime = new Date(journeyData.start_time);
+      const endTimeDate = new Date(endTime);
+      const durationMs = endTimeDate - startTime;
+      const hours = Math.floor(durationMs / (1000 * 60 * 60));
+      const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+      const duration = `${hours}h ${minutes}m`;
+
+      // Get vehicle number - use the vehicle number from journeyData or find from vehicles list
+      const vehicleNumber = journeyData.vehicle_number || 
+                           (vehicles.find(v => v.id === journeyData.vehicle_id)?.vehicle_number) || 
+                           'N/A';
+
+      const emailData = {
+        agencyEmail: agency.email,
+        driverName: journeyData.driver_name,
+        agencyName: agency.name,
+        startLocation: {
+          lat: journeyData.start_lat,
+          lng: journeyData.start_lng
+        },
+        endLocation: {
+          lat: journeyData.end_lat,
+          lng: journeyData.end_lng
+        },
+        distance: parseFloat(distance),
+        startTime: journeyData.start_time,
+        endTime: endTime,
+        duration: duration,
+        journeyId: journeyData.id.toString(),
+        plant: journeyData.plant,
+        vehicleNumber: vehicleNumber, // Added vehicle number
+        driverContact: journeyData.driver_contact
+      };
+
+      console.log('Sending email with data:', emailData);
+      const result = await sendTripEmail(emailData);
+      return result;
+
+    } catch (error) {
+      console.error('Error in sendCompletionEmail:', error);
+      return { 
+        success: false, 
+        message: error.message 
+      };
+    }
+  };
+
   return (
     <div className={styles.driverPage}>
-      <div className={styles.container}>
-        <div className={styles.statusCard}>
-          <h2 className={styles.statusTitle}>
-            {activeJourney ? 'Journey in Progress' : 'Ready to Start'}
-          </h2>
-          <p className={styles.statusText}>
-            {activeJourney 
-              ? `Driver: ${activeJourney.driver_name} - Vehicle: ${activeJourney.vehicle_number} - Plant: ${activeJourney.plant} - Trip Active`
-              : 'No active journey. Click Start to begin a new trip.'
-            }
-          </p>
+  <div className={styles.container}>
+    <div className={styles.statusCard}>
+      <h2 className={styles.statusTitle}>
+        {activeJourney ? '🚗 Trip in Progress' : '✅ Ready to Start'}
+      </h2>
+      
+      {activeJourney ? (
+        <div className={styles.activeJourneyDetails}>
+          <div className={styles.statusLine}>
+            <span className={styles.label}>Driver:</span>
+            <span className={styles.value}>{activeJourney.driver_name}</span>
+          </div>
+          <div className={styles.statusLine}>
+            <span className={styles.label}>Vehicle:</span>
+            <span className={styles.value}>{activeJourney.vehicle_number || 'N/A'}</span>
+          </div>
+          <div className={styles.statusLine}>
+            <span className={styles.label}>Plant:</span>
+            <span className={styles.value}>{activeJourney.plant}</span>
+          </div>
+          <div className={styles.statusLine}>
+            <span className={styles.label}>Start Time:</span>
+            <span className={styles.value}>
+              {new Date(activeJourney.start_time).toLocaleString()}
+            </span>
+          </div>
+          <div className={styles.statusLine}>
+            <span className={styles.label}>Status:</span>
+            <span className={`${styles.value} ${styles.activeStatus}`}>
+              ● Active
+            </span>
+          </div>
         </div>
+      ) : (
+        <p className={styles.statusText}>
+          Click Start to begin a new trip.
+        </p>
+      )}
+    </div>
 
         <div className={styles.controls}>
           {!activeJourney ? (
@@ -277,12 +377,12 @@ const DriverPage = () => {
               onClick={() => setShowEndPopup(true)}
               disabled={loading}
             >
-              🏁 End Journey
+              🏁 End Trip
             </button>
           )}
         </div>
 
-        {/* Start Journey Popup */}
+        {/* Start Trip Popup */}
         {showStartPopup && (
           <div className={styles.popupOverlay}>
             <div className={styles.popup}>
@@ -303,7 +403,7 @@ const DriverPage = () => {
               <form onSubmit={handleStartJourney} className={styles.form}>
                 {/* Plant Selection - First */}
                 <div className={styles.formGroup}>
-                  <label>Plant</label>
+                  {/* <label>Plant</label> */}
                   <select 
                     value={startForm.plant}
                     onChange={(e) => handlePlantChange(e.target.value)}
@@ -327,14 +427,14 @@ const DriverPage = () => {
 
                 {/* Agency Selection - Filtered by Plant */}
                 <div className={styles.formGroup}>
-                  <label>Driving Agency</label>
+                  {/* <label>Driving Agency</label> */}
                   <select 
                     value={startForm.agency_id}
                     onChange={(e) => handleAgencyChange(e.target.value)}
                     required
                     disabled={!startForm.plant || filteredAgencies.length === 0}
                   >
-                    <option value="">Select Agency</option>
+                    <option value="">Select Transporter</option>
                     {filteredAgencies.map(agency => (
                       <option key={agency.id} value={agency.id}>
                         {agency.name}
@@ -348,14 +448,14 @@ const DriverPage = () => {
 
                 {/* Vehicle Selection - Filtered by Agency */}
                 <div className={styles.formGroup}>
-                  <label>Vehicle Number</label>
+                  {/* <label>Vehicle Number</label> */}
                   <select 
                     value={startForm.vehicle_id}
                     onChange={(e) => setStartForm(prev => ({...prev, vehicle_id: e.target.value}))}
                     required
                     disabled={!startForm.agency_id || vehicles.length === 0}
                   >
-                    <option value="">Select Vehicle</option>
+                    <option value="">Select Vehicle Number</option>
                     {vehicles.map(vehicle => (
                       <option key={vehicle.id} value={vehicle.id}>
                         {vehicle.vehicle_number}
@@ -369,7 +469,7 @@ const DriverPage = () => {
 
                 {/* Driver Information */}
                 <div className={styles.formGroup}>
-                  <label>Driver Name</label>
+                  {/* <label>Driver Name</label> */}
                   <input 
                     type="text"
                     value={startForm.driver_name}
@@ -381,7 +481,7 @@ const DriverPage = () => {
 
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
-                    <label>Driver Contact Number</label>
+                    {/* <label>Driver Contact Number</label> */}
                     <input 
                       type="tel"
                       value={startForm.driver_contact}
@@ -405,7 +505,7 @@ const DriverPage = () => {
 
                 {/* Location Coordinates */}
                 <div className={styles.formGroup}>
-                  <label>Start Location Coordinates</label>
+                  {/* <label>Start Location Coordinates</label> */}
                   <div className={styles.coordinatesDisplay}>
                     <div className={styles.coordinateField}>
                       <span className={styles.coordinateLabel}>Latitude:</span>
@@ -455,12 +555,12 @@ const DriverPage = () => {
           </div>
         )}
 
-        {/* End Journey Popup */}
+        {/* End Trip Popup */}
         {showEndPopup && activeJourney && (
           <div className={styles.popupOverlay}>
             <div className={styles.popup}>
               <div className={styles.popupHeader}>
-                <h3>End Journey</h3>
+                <h3>End Trip</h3>
                 <button 
                   className={styles.closeBtn}
                   onClick={() => setShowEndPopup(false)}
@@ -526,7 +626,7 @@ const DriverPage = () => {
                     className={styles.submitBtn}
                     disabled={loading || !endForm.end_lat || !endForm.end_lng}
                   >
-                    {loading ? 'Ending...' : 'End Trip'}
+                    {loading ? 'Ending...' : 'End Journey'}
                   </button>
                 </div>
               </form>
