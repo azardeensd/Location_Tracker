@@ -10,7 +10,7 @@ const DriverPage = () => {
   const [plants, setPlants] = useState([]);
   const [showStartPopup, setShowStartPopup] = useState(false);
   const [showEndPopup, setShowEndPopup] = useState(false);
-  const [activeJourney, setActiveJourney] = useState(null);
+  const [activeTrip, setActiveTrip] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // Form states
@@ -31,7 +31,7 @@ const DriverPage = () => {
 
   useEffect(() => {
     loadAgenciesAndPlants();
-    checkActiveJourney();
+    checkActiveTrip();
     initEmailJS(); // Initialize EmailJS
   }, []);
 
@@ -76,14 +76,14 @@ const DriverPage = () => {
     }
   };
 
-  const checkActiveJourney = async () => {
+  const checkActiveTrip = async () => {
     try {
-      const { data, error } = await api.getActiveJourney();
+      const { data, error } = await api.getActiveTrip();
       if (!error && data) {
-        setActiveJourney(data);
+        setActiveTrip(data);
       }
     } catch (error) {
-      console.error('Error checking active journey:', error);
+      console.error('Error checking active Trip:', error);
     }
   };
 
@@ -164,7 +164,7 @@ const DriverPage = () => {
     loadVehicles(agencyId);
   };
 
-  const handleStartJourney = async (e) => {
+  const handleStartTrip = async (e) => {
   e.preventDefault();
   setLoading(true);
 
@@ -172,7 +172,7 @@ const DriverPage = () => {
     // Find the selected vehicle to get its number
     const selectedVehicle = vehicles.find(v => v.id === parseInt(startForm.vehicle_id));
     
-    const journeyData = {
+    const TripData = {
       ...startForm,
       agency_id: parseInt(startForm.agency_id),
       vehicle_id: parseInt(startForm.vehicle_id),
@@ -183,12 +183,12 @@ const DriverPage = () => {
       start_time: new Date().toISOString()
     };
 
-    console.log('Starting journey with data:', journeyData);
+    console.log('Starting Trip with data:', TripData);
 
-    const { data, error } = await api.startJourney(journeyData);
+    const { data, error } = await api.startTrip(TripData);
     
     if (!error && data) {
-      setActiveJourney(data);
+      setActiveTrip(data);
       setShowStartPopup(false);
       setStartForm({ 
         plant: '',
@@ -201,26 +201,26 @@ const DriverPage = () => {
       });
       setFilteredAgencies([]);
       setVehicles([]);
-      alert('Journey started successfully!');
+      alert('Trip started successfully!');
     } else {
-      alert('Error starting journey: ' + error?.message);
+      alert('Error starting trip: ' + error?.message);
     }
   } catch (error) {
-    alert('Error starting journey: ' + error.message);
+    alert('Error starting trip: ' + error.message);
   } finally {
     setLoading(false);
   }
 };
 
-  const handleEndJourney = async (e) => {
+  const handleEndTrip = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       const endTime = new Date().toISOString();
       const distance = calculateDistance(
-        activeJourney.start_lat,
-        activeJourney.start_lng,
+        activeTrip.start_lat,
+        activeTrip.start_lng,
         parseFloat(endForm.end_lat),
         parseFloat(endForm.end_lng)
       );
@@ -233,35 +233,35 @@ const DriverPage = () => {
         status: 'completed'
       };
 
-      const { data, error } = await api.endJourney(activeJourney.id, endData);
+      const { data, error } = await api.endTrip(activeTrip.id, endData);
       
       if (!error && data) {
         // Send email notification with proper data formatting
         const emailResult = await sendCompletionEmail(data, distance, endTime);
         
-        setActiveJourney(null);
+        setActiveTrip(null);
         setShowEndPopup(false);
         setEndForm({ end_lat: '', end_lng: '' });
         
         if (emailResult.success) {
-          alert(`Journey completed! Distance: ${distance} km\nEmail notification has been sent successfully.`);
+          alert(`Trip completed! Distance: ${distance} km\nEmail notification has been sent successfully.`);
         } else {
-          alert(`Journey completed! Distance: ${distance} km\nBut email failed to send: ${emailResult.message}`);
+          alert(`Trip completed! Distance: ${distance} km\nBut email failed to send: ${emailResult.message}`);
         }
       } else {
-        alert('Error ending journey: ' + error?.message);
+        alert('Error ending trip: ' + error?.message);
       }
     } catch (error) {
-      alert('Error ending journey: ' + error.message);
+      alert('Error ending trip: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
   // Email sending function
-  const sendCompletionEmail = async (journeyData, distance, endTime) => {
+  const sendCompletionEmail = async (TripData, distance, endTime) => {
     try {
-      const agency = agencies.find(a => a.id === journeyData.agency_id);
+      const agency = agencies.find(a => a.id === TripData.agency_id);
       
       if (!agency) {
         return { success: false, message: 'Agency not found' };
@@ -273,38 +273,38 @@ const DriverPage = () => {
       }
 
       // Calculate duration
-      const startTime = new Date(journeyData.start_time);
+      const startTime = new Date(TripData.start_time);
       const endTimeDate = new Date(endTime);
       const durationMs = endTimeDate - startTime;
       const hours = Math.floor(durationMs / (1000 * 60 * 60));
       const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
       const duration = `${hours}h ${minutes}m`;
 
-      // Get vehicle number - use the vehicle number from journeyData or find from vehicles list
-      const vehicleNumber = journeyData.vehicle_number || 
-                           (vehicles.find(v => v.id === journeyData.vehicle_id)?.vehicle_number) || 
+      // Get vehicle number - use the vehicle number from TripData or find from vehicles list
+      const vehicleNumber = TripData.vehicle_number || 
+                           (vehicles.find(v => v.id === TripData.vehicle_id)?.vehicle_number) || 
                            'N/A';
 
       const emailData = {
         agencyEmail: agency.email,
-        driverName: journeyData.driver_name,
+        driverName: TripData.driver_name,
         agencyName: agency.name,
         startLocation: {
-          lat: journeyData.start_lat,
-          lng: journeyData.start_lng
+          lat: TripData.start_lat,
+          lng: TripData.start_lng
         },
         endLocation: {
-          lat: journeyData.end_lat,
-          lng: journeyData.end_lng
+          lat: TripData.end_lat,
+          lng: TripData.end_lng
         },
         distance: parseFloat(distance),
-        startTime: journeyData.start_time,
+        startTime: TripData.start_time,
         endTime: endTime,
         duration: duration,
-        journeyId: journeyData.id.toString(),
-        plant: journeyData.plant,
+        TripId: TripData.id.toString(),
+        plant: TripData.plant,
         vehicleNumber: vehicleNumber, // Added vehicle number
-        driverContact: journeyData.driver_contact
+        driverContact: TripData.driver_contact
       };
 
       console.log('Sending email with data:', emailData);
@@ -325,27 +325,27 @@ const DriverPage = () => {
   <div className={styles.container}>
     <div className={styles.statusCard}>
       <h2 className={styles.statusTitle}>
-        {activeJourney ? '🚗 Trip in Progress' : '✅ Ready to Start'}
+        {activeTrip ? '🚗 Trip in Progress' : '✅ Ready to Start'}
       </h2>
       
-      {activeJourney ? (
-        <div className={styles.activeJourneyDetails}>
+      {activeTrip ? (
+        <div className={styles.activeTripDetails}>
           <div className={styles.statusLine}>
             <span className={styles.label}>Driver:</span>
-            <span className={styles.value}>{activeJourney.driver_name}</span>
+            <span className={styles.value}>{activeTrip.driver_name}</span>
           </div>
           <div className={styles.statusLine}>
             <span className={styles.label}>Vehicle:</span>
-            <span className={styles.value}>{activeJourney.vehicle_number || 'N/A'}</span>
+            <span className={styles.value}>{activeTrip.vehicle_number || 'N/A'}</span>
           </div>
           <div className={styles.statusLine}>
             <span className={styles.label}>Plant:</span>
-            <span className={styles.value}>{activeJourney.plant}</span>
+            <span className={styles.value}>{activeTrip.plant}</span>
           </div>
           <div className={styles.statusLine}>
             <span className={styles.label}>Start Time:</span>
             <span className={styles.value}>
-              {new Date(activeJourney.start_time).toLocaleString()}
+              {new Date(activeTrip.start_time).toLocaleString()}
             </span>
           </div>
           <div className={styles.statusLine}>
@@ -363,7 +363,7 @@ const DriverPage = () => {
     </div>
 
         <div className={styles.controls}>
-          {!activeJourney ? (
+          {!activeTrip ? (
             <button 
               className={`${styles.btn} ${styles.startBtn}`}
               onClick={() => setShowStartPopup(true)}
@@ -382,173 +382,206 @@ const DriverPage = () => {
           )}
         </div>
 
-        {/* Start Trip Popup */}
-        {showStartPopup && (
-          <div className={styles.popupOverlay}>
-            <div className={styles.popup}>
-              <div className={styles.popupHeader}>
-                <h3>Start New Trip</h3>
-                <button 
-                  className={styles.closeBtn}
-                  onClick={() => {
-                    setShowStartPopup(false);
-                    setFilteredAgencies([]);
-                    setVehicles([]);
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-              
-              <form onSubmit={handleStartJourney} className={styles.form}>
-                {/* Plant Selection - First */}
-                <div className={styles.formGroup}>
-                  {/* <label>Plant</label> */}
-                  <select 
-                    value={startForm.plant}
-                    onChange={(e) => handlePlantChange(e.target.value)}
-                    required
-                  >
-                    <option value="">Select Plant</option>
-                    {plants.length > 0 ? (
-                      plants.map(plant => (
-                        <option key={plant.id} value={plant.name}>
-                          {plant.name}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="" disabled>Loading plants...</option>
-                    )}
-                  </select>
-                  {plants.length === 0 && (
-                    <p className={styles.noData}>No plants found. Please check your database.</p>
-                  )}
-                </div>
+        {/* Start Journey Popup */}
+{showStartPopup && (
+  <div className={styles.popupOverlay}>
+    <div className={styles.popup}>
+      <div className={styles.popupHeader}>
+        <h3>Start New Trip</h3>
+        <button 
+          className={styles.closeBtn}
+          onClick={() => {
+            setShowStartPopup(false);
+            setFilteredAgencies([]);
+            setVehicles([]);
+          }}
+        >
+          ✕
+        </button>
+      </div>
+      
+      <form onSubmit={handleStartTrip} className={styles.form}>
+        {/* 1. Plant Selection - First */}
+        <div className={styles.formGroup}>
+          {/* <label>Plant</label> */}
+          <select 
+            value={startForm.plant}
+            onChange={(e) => handlePlantChange(e.target.value)}
+            required
+          >
+            {/* <option value="">Select Plant</option> */}
+            {plants.length > 0 ? (
+              plants.map(plant => (
+                <option key={plant.id} value={plant.name}>
+                  {plant.name}
+                </option>
+              ))
+            ) : (
+              <option value="" disabled>Loading plants...</option>
+            )}
+          </select>
+          {plants.length === 0 && (
+            <p className={styles.noData}>No plants found. Please check your database.</p>
+          )}
+        </div>
 
-                {/* Agency Selection - Filtered by Plant */}
-                <div className={styles.formGroup}>
-                  {/* <label>Driving Agency</label> */}
-                  <select 
-                    value={startForm.agency_id}
-                    onChange={(e) => handleAgencyChange(e.target.value)}
-                    required
-                    disabled={!startForm.plant || filteredAgencies.length === 0}
-                  >
-                    <option value="">Select Transporter</option>
-                    {filteredAgencies.map(agency => (
-                      <option key={agency.id} value={agency.id}>
-                        {agency.name}
-                      </option>
-                    ))}
-                  </select>
-                  {startForm.plant && filteredAgencies.length === 0 && (
-                    <p className={styles.noData}>No agencies found for {startForm.plant}</p>
-                  )}
-                </div>
+        {/* 2. Transporter (Agency) - Second */}
+        <div className={styles.formGroup}>
+          {/* <label>Transporter</label> */}
+          <select 
+            value={startForm.agency_id}
+            onChange={(e) => handleAgencyChange(e.target.value)}
+            required
+            disabled={!startForm.plant || filteredAgencies.length === 0}
+          >
+            <option value="">Select Transporter</option>
+            {filteredAgencies.map(agency => (
+              <option key={agency.id} value={agency.id}>
+                {agency.name}
+              </option>
+            ))}
+          </select>
+          {startForm.plant && filteredAgencies.length === 0 && (
+            <p className={styles.noData}>No transporters found for {startForm.plant}</p>
+          )}
+        </div>
 
-                {/* Vehicle Selection - Filtered by Agency */}
-                <div className={styles.formGroup}>
-                  {/* <label>Vehicle Number</label> */}
-                  <select 
-                    value={startForm.vehicle_id}
-                    onChange={(e) => setStartForm(prev => ({...prev, vehicle_id: e.target.value}))}
-                    required
-                    disabled={!startForm.agency_id || vehicles.length === 0}
-                  >
-                    <option value="">Select Vehicle Number</option>
-                    {vehicles.map(vehicle => (
-                      <option key={vehicle.id} value={vehicle.id}>
-                        {vehicle.vehicle_number}
-                      </option>
-                    ))}
-                  </select>
-                  {startForm.agency_id && vehicles.length === 0 && (
-                    <p className={styles.noData}>No vehicles found for this agency</p>
-                  )}
-                </div>
+        {/* 3. Vehicle Number - Third */}
+        <div className={styles.formGroup}>
+          {/* <label>Vehicle Number</label> */}
+          <select 
+            value={startForm.vehicle_id}
+            onChange={(e) => setStartForm(prev => ({...prev, vehicle_id: e.target.value}))}
+            required
+            disabled={!startForm.agency_id || vehicles.length === 0}
+          >
+            <option value="">Select Vehicle</option>
+            {vehicles.map(vehicle => (
+              <option key={vehicle.id} value={vehicle.id}>
+                {vehicle.vehicle_number}
+              </option>
+            ))}
+          </select>
+          {startForm.agency_id && vehicles.length === 0 && (
+            <p className={styles.noData}>No vehicles found for this transporter</p>
+          )}
+        </div>
 
-                {/* Driver Information */}
-                <div className={styles.formGroup}>
-                  {/* <label>Driver Name</label> */}
-                  <input 
-                    type="text"
-                    value={startForm.driver_name}
-                    onChange={(e) => setStartForm(prev => ({...prev, driver_name: e.target.value}))}
-                    placeholder="Enter driver name"
-                    required
-                  />
-                </div>
+        {/* 4. Driver Name - Fourth */}
+        <div className={styles.formGroup}>
+          {/* <label>Driver Name</label> */}
+          <input 
+            type="text"
+            value={startForm.driver_name}
+            onChange={(e) => setStartForm(prev => ({...prev, driver_name: e.target.value}))}
+            placeholder="Enter driver name"
+            required
+          />
+        </div>
 
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    {/* <label>Driver Contact Number</label> */}
-                    <input 
-                      type="tel"
-                      value={startForm.driver_contact}
-                      onChange={(e) => setStartForm(prev => ({...prev, driver_contact: e.target.value}))}
-                      placeholder="Enter contact number"
-                      required
-                    />
-                  </div>
-                  
-                  <div className={styles.geoButtonContainer}>
-                    <button 
-                      type="button"
-                      className={styles.locationBtn}
-                      onClick={() => getCurrentLocation('start')}
-                      disabled={loading}
-                    >
-                      📍 Get Geo Location
-                    </button>
-                  </div>
-                </div>
+        {/* 5. Contact Number - Fifth */}
+        <div className={styles.formGroup}>
+          {/* <label>Driver Contact Number</label> */}
+          <input 
+            type="tel"
+            value={startForm.driver_contact}
+            onChange={(e) => {
+              let value = e.target.value;
+              // Remove any non-digit characters
+              value = value.replace(/\D/g, '');
+              // Limit to 10 digits
+              if (value.length <= 10) {
+                setStartForm(prev => ({...prev, driver_contact: value}));
+              }
+            }}
+            placeholder="Enter mobile number"
+            required
+            pattern="[0-9]{10}"
+            title="Please enter exactly 10 digits"
+            maxLength="10"
+            inputMode="numeric"
+          />
+          <div className={styles.validationInfo}>
+            <span className={
+              startForm.driver_contact.length === 10 
+                ? styles.validCount 
+                : styles.digitCount
+            }>
+              {/* {startForm.driver_contact.length}/10 digits */}
+            </span>
+            {startForm.driver_contact && startForm.driver_contact.length !== 10 && (
+              <span className={styles.errorText}>❌ Must be exactly 10 digits</span>
+            )}
+            {startForm.driver_contact.length === 10 && (
+              <span className={styles.successText}>✅ Valid number</span>
+            )}
+          </div>
+        </div>
 
-                {/* Location Coordinates */}
-                <div className={styles.formGroup}>
-                  {/* <label>Start Location Coordinates</label> */}
-                  <div className={styles.coordinatesDisplay}>
-                    <div className={styles.coordinateField}>
-                      <span className={styles.coordinateLabel}>Latitude:</span>
-                      <input 
-                        type="text"
-                        value={startForm.start_lat}
-                        readOnly
-                        className={styles.readonlyInput}
-                        placeholder="Click Get Geo Location"
-                      />
-                    </div>
-                    <div className={styles.coordinateField}>
-                      <span className={styles.coordinateLabel}>Longitude:</span>
-                      <input 
-                        type="text"
-                        value={startForm.start_lng}
-                        readOnly
-                        className={styles.readonlyInput}
-                        placeholder="Click Get Geo Location"
-                      />
-                    </div>
-                  </div>
-                </div>
+        {/* 6. Get Geo Location Button - Sixth */}
+        <div className={styles.formGroup}>
+          <label>Location Coordinates</label>
+          <button 
+            type="button"
+            className={styles.locationBtn}
+            onClick={() => getCurrentLocation('start')}
+            disabled={loading}
+          >
+            📍 Get Geo Location
+          </button>
+          
+          {/* Location Coordinates Display */}
+          <div className={styles.coordinatesDisplay}>
+            <div className={styles.coordinateField}>
+              <span className={styles.coordinateLabel}>Latitude:</span>
+              <input 
+                type="text"
+                value={startForm.start_lat}
+                readOnly
+                className={styles.readonlyInput}
+                placeholder="Click Get Geo Location"
+              />
+            </div>
+            <div className={styles.coordinateField}>
+              <span className={styles.coordinateLabel}>Longitude:</span>
+              <input 
+                type="text"
+                value={startForm.start_lng}
+                readOnly
+                className={styles.readonlyInput}
+                placeholder="Click Get Geo Location"
+              />
+            </div>
+          </div>
+        </div>
 
-                <div className={styles.formActions}>
-                  <button 
-                    type="button"
-                    className={styles.cancelBtn}
-                    onClick={() => {
-                      setShowStartPopup(false);
-                      setFilteredAgencies([]);
-                      setVehicles([]);
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button 
+        {/* Form Actions */}
+        <div className={styles.formActions}>
+          <button 
+            type="submit"
+            className={styles.submitBtn}
+            disabled={loading || !startForm.start_lat || !startForm.start_lng || startForm.driver_contact.length !== 10}
+          >
+            {loading ? 'Starting...' : 'Start Trip'}
+          </button>
+          <button 
+            type="button"
+            className={styles.cancelBtn}
+            onClick={() => {
+              setShowStartPopup(false);
+              setFilteredAgencies([]);
+              setVehicles([]);
+            }}
+          >
+            Cancel
+          </button>
+                  {/* <button 
                     type="submit"
                     className={styles.submitBtn}
                     disabled={loading || !startForm.start_lat || !startForm.start_lng}
                   >
                     {loading ? 'Starting...' : 'Start Trip'}
-                  </button>
+                  </button> */}
                 </div>
               </form>
             </div>
@@ -556,7 +589,7 @@ const DriverPage = () => {
         )}
 
         {/* End Trip Popup */}
-        {showEndPopup && activeJourney && (
+        {showEndPopup && activeTrip && (
           <div className={styles.popupOverlay}>
             <div className={styles.popup}>
               <div className={styles.popupHeader}>
@@ -569,16 +602,16 @@ const DriverPage = () => {
                 </button>
               </div>
 
-              <div className={styles.journeyInfo}>
-                <p><strong>Driver:</strong> {activeJourney.driver_name}</p>
-                <p><strong>Contact:</strong> {activeJourney.driver_contact}</p>
-                <p><strong>Vehicle:</strong> {activeJourney.vehicle_number}</p>
-                <p><strong>Agency:</strong> {agencies.find(a => a.id === activeJourney.agency_id)?.name}</p>
-                <p><strong>Plant:</strong> {activeJourney.plant}</p>
-                <p><strong>Start Time:</strong> {new Date(activeJourney.start_time).toLocaleString()}</p>
+              <div className={styles.TripInfo}>
+                <p><strong>Driver:</strong> {activeTrip.driver_name}</p>
+                <p><strong>Contact:</strong> {activeTrip.driver_contact}</p>
+                <p><strong>Vehicle:</strong> {activeTrip.vehicle_number}</p>
+                <p><strong>Agency:</strong> {agencies.find(a => a.id === activeTrip.agency_id)?.name}</p>
+                <p><strong>Plant:</strong> {activeTrip.plant}</p>
+                <p><strong>Start Time:</strong> {new Date(activeTrip.start_time).toLocaleString()}</p>
               </div>
               
-              <form onSubmit={handleEndJourney} className={styles.form}>
+              <form onSubmit={handleEndTrip} className={styles.form}>
                 <div className={styles.formGroup}>
                   <label>End Location Coordinates</label>
                   <div className={styles.coordinatesDisplay}>
@@ -626,7 +659,7 @@ const DriverPage = () => {
                     className={styles.submitBtn}
                     disabled={loading || !endForm.end_lat || !endForm.end_lng}
                   >
-                    {loading ? 'Ending...' : 'End Journey'}
+                    {loading ? 'Ending...' : 'End Trip'}
                   </button>
                 </div>
               </form>
