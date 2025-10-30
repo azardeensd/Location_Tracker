@@ -409,7 +409,7 @@ const DriverPage = () => {
             onChange={(e) => handlePlantChange(e.target.value)}
             required
           >
-            {/* <option value="">Select Plant</option> */}
+            { <option value="">Select Plant</option> }
             {plants.length > 0 ? (
               plants.map(plant => (
                 <option key={plant.id} value={plant.name}>
