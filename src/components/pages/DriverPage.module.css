@@ -95,7 +95,7 @@
 
 /* End Journey Button - Orange Fill Effect */
 .endBtn {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  background: linear-gradient(135deg, #111eac 0%, #111eac 100%);
   color: white;
   position: relative;
   overflow: hidden;
@@ -109,7 +109,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%);
+  background: #de2a20 0%;
   transition: left 0.5s cubic-bezier(0.65, 0, 0.35, 1);
   z-index: -1;
 }
@@ -568,4 +568,90 @@
 .retryBtn:hover {
   background: #a00;
   transform: translateY(-2px);
+}
+
+.activeJourneyDetails {
+  text-align: left;
+  margin-top: 1rem;
+}
+
+.statusLine {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.statusLine:last-child {
+  border-bottom: none;
+}
+
+.label {
+  font-weight: 600;
+  color: #555;
+  font-size: 0.95rem;
+  min-width: 100px;
+}
+
+.value {
+  color: #333;
+  font-size: 0.95rem;
+  text-align: right;
+  flex: 1;
+  margin-left: 1rem;
+}
+
+.activeStatus {
+  color: #4CAF50;
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+/* Alternative layout - if you prefer a grid layout */
+
+.activeJourneyDetails {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.statusLine {
+  display: contents;
+}
+
+.label {
+  font-weight: 600;
+  color: #555;
+  font-size: 1.2rem;
+  text-align: right;
+}
+
+/* .value {
+  color: #333;
+  font-size: 0.95rem;
+} */
+
+
+/* For mobile responsiveness */
+@media (max-width: 768px) {
+  .statusLine {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.75rem 0;
+  }
+  
+  .label {
+    min-width: auto;
+    margin-bottom: 0.25rem;
+  }
+  
+  .value {
+    margin-left: 0;
+    text-align: left;
+    width: 100%;
+    font-size: 1.2rem;
+  }
 }
