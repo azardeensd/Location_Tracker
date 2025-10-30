@@ -64,7 +64,7 @@
 
 /* Start Trip Main Button - Blue to Green Fill */
 .startBtn {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: linear-gradient(135deg, #044c8b 0%, #044c8b 100%);
   color: white;
   position: relative;
   overflow: hidden;
@@ -295,20 +295,7 @@
   cursor: not-allowed;
 }
 
-.formActions {
-  display: flex;
-  gap: 15px;
-  justify-content: flex-end;
-  margin-top: 20px;
-}
-/* This will make Cancel appear first visually even though it's second in DOM */
-.formActions button:first-child {
-  order: 2;
-}
 
-.formActions button:last-child {
-  order: 1;
-}
 
 /* Enhanced Button Styles with Left-to-Right Hover Effect */
 .cancelBtn,
@@ -443,9 +430,6 @@
     gap: 0.5rem;
   }
 
-  .formActions {
-    flex-direction: column;
-  }
 
   .cancelBtn,
   .submitBtn {
@@ -654,4 +638,35 @@
     width: 100%;
     font-size: 1.2rem;
   }
+}
+
+.requiredStar {
+  color: #ff6b6b;
+}
+
+.unselected {
+  border-color: #ff6b6b;
+  box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.1);
+}
+
+.hintText {
+  color: #666;
+  font-size: 12px;
+  margin-top: 5px;
+  font-style: italic;
+}
+.formActions {
+  display: flex;
+  gap: 15px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* This will make Cancel appear first visually even though it's second in DOM */
+.formActions button:first-child {
+  order: 2;
+}
+
+.formActions button:last-child {
+  order: 1;
 }
