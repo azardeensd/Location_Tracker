@@ -46,26 +46,35 @@ export const api = {
     }
   },
 
-  // Start journey
-  startJourney: async (journeyData) => {
-    try {
-      const { data, error } = await supabase
-        .from('journeys')
-        .insert([{
-          ...journeyData,
-          status: 'active',
-          created_at: new Date().toISOString()
-        }])
-        .select()
-        .single();
-      
-      return { data, error };
-    } catch (error) {
-      console.error('Error starting journey:', error);
-      return { data: null, error };
-    }
-  },
-
+  // In your api.js
+startJourney: async (journeyData) => {
+  try {
+    console.log('Starting journey with data:', journeyData);
+    const { data, error } = await supabase
+      .from('journeys')
+      .insert([{
+        agency_id: journeyData.agency_id,
+        vehicle_id: journeyData.vehicle_id,
+        vehicle_number: journeyData.vehicle_number, // Make sure this is included
+        plant: journeyData.plant,
+        driver_name: journeyData.driver_name,
+        driver_contact: journeyData.driver_contact,
+        start_lat: journeyData.start_lat,
+        start_lng: journeyData.start_lng,
+        start_time: journeyData.start_time,
+        status: 'active',
+        created_at: new Date().toISOString()
+      }])
+      .select('*') // Select all columns including vehicle_number
+      .single();
+    
+    console.log('Start journey response:', { data, error });
+    return { data, error };
+  } catch (error) {
+    console.error('Error starting journey:', error);
+    return { data: null, error };
+  }
+},
   // End journey
   endJourney: async (journeyId, endData) => {
     try {
