@@ -48,50 +48,80 @@
   border: none;
   border-radius: 50px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   position: relative;
   overflow: hidden;
+  transform: translateY(0);
 }
 
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
 }
 
-.btn::before {
+/* Start Trip Main Button - Blue to Green Fill */
+.startBtn {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.startBtn::before {
   content: '';
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-  transition: left 0.5s;
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  transition: left 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+  z-index: -1;
 }
 
-.btn:hover:not(:disabled)::before {
-  left: 100%;
-}
-
-.startBtn {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  color: white;
+.startBtn:hover:not(:disabled)::before {
+  left: 0;
 }
 
 .startBtn:hover:not(:disabled) {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 25px rgba(79, 172, 254, 0.4);
-}
-
-.endBtn {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 15px 30px rgba(76, 175, 80, 0.4);
   color: white;
 }
 
+/* End Journey Button - Orange Fill Effect */
+.endBtn {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  color: white;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.endBtn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%);
+  transition: left 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+  z-index: -1;
+}
+
+.endBtn:hover:not(:disabled)::before {
+  left: 0;
+}
+
 .endBtn:hover:not(:disabled) {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 25px rgba(250, 112, 154, 0.4);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 15px 30px rgba(255, 167, 38, 0.4);
+  color: white;
 }
 
 /* Popup Styles */
@@ -157,11 +187,13 @@
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 50%;
-  transition: background 0.3s;
+  transition: all 0.3s ease;
+  transform: scale(1);
 }
 
 .closeBtn:hover {
   background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1) rotate(90deg);
 }
 
 .form {
@@ -199,7 +231,7 @@
   border: 2px solid #e1e5e9;
   border-radius: 10px;
   font-size: 1rem;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  transition: all 0.3s ease;
   box-sizing: border-box;
 }
 
@@ -208,6 +240,7 @@
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  transform: translateY(-2px);
 }
 
 .locationInputs {
@@ -217,6 +250,7 @@
   margin-bottom: 1rem;
 }
 
+/* Location Button - Green Fill Effect */
 .locationBtn {
   width: 100%;
   padding: 1rem;
@@ -224,14 +258,36 @@
   border: 2px dashed #dee2e6;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.4s ease;
   font-size: 0.95rem;
+  transform: translateY(0);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.locationBtn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+  transition: left 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+  z-index: -1;
+}
+
+.locationBtn:hover:not(:disabled)::before {
+  left: 0;
 }
 
 .locationBtn:hover:not(:disabled) {
-  background: #e9ecef;
   border-color: #667eea;
-  transform: translateY(-2px);
+  border-style: solid;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+  color: white;
 }
 
 .locationBtn:disabled {
@@ -242,62 +298,102 @@
 .formActions {
   display: flex;
   gap: 15px;
-  justify-content: flex-end; /* Align to the right */
-  flex-direction: row-reverse; /* This reverses the visual order */
+  justify-content: flex-end;
+  flex-direction: row-reverse;
   margin-top: 20px;
 }
-/* This will make Cancel appear first visually even though it's second in DOM */
-.formActions button:first-child {
-  order: 2;
-}
 
-.formActions button:last-child {
-  order: 1;
-}
-
+/* Enhanced Button Styles with Left-to-Right Hover Effect */
 .cancelBtn,
 .submitBtn {
-   background: #4CAF50;
-  color: white;
   border: none;
-  padding: 12px 24px;
-  border-radius: 4px;
+  padding: 14px 28px;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 16px;
-  font-weight: bold;
-  min-width: 120px;
+  font-weight: 600;
+  min-width: 140px;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(0);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
 }
 
-.cancelBtn {
-  background: #f44336;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-  min-width: 100px;
-}
-
-.cancelBtn:hover {
-  background: #da190b;
-  transform: translateY(-2px);
-}
-
+/* Start Trip Button - Green Fill Effect */
 .submitBtn {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
 }
 
+.submitBtn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  transition: left 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+  z-index: -1;
+}
+
+.submitBtn:hover:not(:disabled)::before {
+  left: 0;
+}
+
 .submitBtn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-  background: #45a049;
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 10px 25px rgba(76, 175, 80, 0.3);
+  color: white;
+}
+
+.submitBtn:active:not(:disabled) {
+  transform: translateY(-1px) scale(1.02);
 }
 
 .submitBtn:disabled {
   background: #cccccc;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.submitBtn:disabled::before {
+  display: none;
+}
+
+/* Cancel Button - Red Fill Effect */
+.cancelBtn {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  color: white;
+}
+
+.cancelBtn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  transition: left 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+  z-index: -1;
+}
+
+.cancelBtn:hover:not(:disabled)::before {
+  left: 0;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3);
+  color: white;
+}
+
+.cancelBtn:active:not(:disabled) {
+  transform: translateY(-1px) scale(1.02);
 }
 
 /* Mobile Responsive */
@@ -347,6 +443,7 @@
   .cancelBtn,
   .submitBtn {
     width: 100%;
+    min-width: auto;
   }
 }
 
@@ -373,8 +470,8 @@
     padding: 1rem;
   }
 }
-/* Add these to your existing DriverPage.module.css */
 
+/* Form Layout Styles */
 .formRow {
   display: flex;
   gap: 15px;
@@ -429,26 +526,6 @@
   font-style: italic;
 }
 
-/* Update existing locationBtn if needed */
-.locationBtn {
-  width: 100%;
-  padding: 10px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.locationBtn:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
-
-.locationBtn:hover:not(:disabled) {
-  background-color: #45a049;
-}
 .noData {
   color: #ff6b6b;
   font-size: 12px;
@@ -478,8 +555,10 @@
   border-radius: 4px;
   cursor: pointer;
   margin-top: 8px;
+  transition: all 0.3s ease;
 }
 
 .retryBtn:hover {
   background: #a00;
+  transform: translateY(-2px);
 }
