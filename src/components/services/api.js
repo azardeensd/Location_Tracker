@@ -47,44 +47,44 @@ export const api = {
   },
 
   // In your api.js
-startJourney: async (journeyData) => {
+startTrip: async (TripData) => {
   try {
-    console.log('Starting journey with data:', journeyData);
+    console.log('Starting Trip with data:', TripData);
     const { data, error } = await supabase
-      .from('journeys')
+      .from('Trips')
       .insert([{
-        agency_id: journeyData.agency_id,
-        vehicle_id: journeyData.vehicle_id,
-        vehicle_number: journeyData.vehicle_number, // Make sure this is included
-        plant: journeyData.plant,
-        driver_name: journeyData.driver_name,
-        driver_contact: journeyData.driver_contact,
-        start_lat: journeyData.start_lat,
-        start_lng: journeyData.start_lng,
-        start_time: journeyData.start_time,
+        agency_id: TripData.agency_id,
+        vehicle_id: TripData.vehicle_id,
+        vehicle_number: TripData.vehicle_number, // Make sure this is included
+        plant: TripData.plant,
+        driver_name: TripData.driver_name,
+        driver_contact: TripData.driver_contact,
+        start_lat: TripData.start_lat,
+        start_lng: TripData.start_lng,
+        start_time: TripData.start_time,
         status: 'active',
         created_at: new Date().toISOString()
       }])
       .select('*') // Select all columns including vehicle_number
       .single();
     
-    console.log('Start journey response:', { data, error });
+    console.log('Start Trip response:', { data, error });
     return { data, error };
   } catch (error) {
-    console.error('Error starting journey:', error);
+    console.error('Error starting Trip:', error);
     return { data: null, error };
   }
 },
-  // End journey
-  endJourney: async (journeyId, endData) => {
+  // End Trip
+  endTrip: async (TripId, endData) => {
     try {
-      const { data: journeyData, error } = await supabase
-        .from('journeys')
+      const { data: TripData, error } = await supabase
+        .from('Trips')
         .update({
           ...endData,
           updated_at: new Date().toISOString()
         })
-        .eq('id', journeyId)
+        .eq('id', TripId)
         .select()
         .single();
 
@@ -92,18 +92,18 @@ startJourney: async (journeyData) => {
         throw new Error(error.message);
       }
 
-      return { data: journeyData, error: null };
+      return { data: TripData, error: null };
     } catch (error) {
-      console.error('Error ending journey:', error);
+      console.error('Error ending Trip:', error);
       return { data: null, error: { message: error.message } };
     }
   },
 
-  // Get active journey
-  getActiveJourney: async () => {
+  // Get active Trip
+  getActiveTrip: async () => {
     try {
       const { data, error } = await supabase
-        .from('journeys')
+        .from('Trips')
         .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false })
@@ -112,7 +112,7 @@ startJourney: async (journeyData) => {
       
       return { data, error };
     } catch (error) {
-      console.error('Error fetching active journey:', error);
+      console.error('Error fetching active Trip:', error);
       return { data: null, error };
     }
   }
