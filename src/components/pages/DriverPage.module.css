@@ -299,8 +299,15 @@
   display: flex;
   gap: 15px;
   justify-content: flex-end;
-  flex-direction: row-reverse;
   margin-top: 20px;
+}
+/* This will make Cancel appear first visually even though it's second in DOM */
+.formActions button:first-child {
+  order: 2;
+}
+
+.formActions button:last-child {
+  order: 1;
 }
 
 /* Enhanced Button Styles with Left-to-Right Hover Effect */
