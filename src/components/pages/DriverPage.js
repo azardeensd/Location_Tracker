@@ -382,7 +382,7 @@ const DriverPage = () => {
           )}
         </div>
 
-        {/* Start Journey Popup */}
+        {/* Start Trip Popup */}
 {showStartPopup && (
   <div className={styles.popupOverlay}>
     <div className={styles.popup}>
@@ -403,13 +403,13 @@ const DriverPage = () => {
       <form onSubmit={handleStartTrip} className={styles.form}>
         {/* 1. Plant Selection - First */}
         <div className={styles.formGroup}>
-          {/* <label>Plant</label> */}
+          <label>Plant</label>
           <select 
             value={startForm.plant}
             onChange={(e) => handlePlantChange(e.target.value)}
             required
           >
-            { <option value="">Select Plant</option> }
+            <option value="">Select Plant</option>
             {plants.length > 0 ? (
               plants.map(plant => (
                 <option key={plant.id} value={plant.name}>
@@ -427,7 +427,7 @@ const DriverPage = () => {
 
         {/* 2. Transporter (Agency) - Second */}
         <div className={styles.formGroup}>
-          {/* <label>Transporter</label> */}
+          <label>Transporter</label>
           <select 
             value={startForm.agency_id}
             onChange={(e) => handleAgencyChange(e.target.value)}
@@ -448,7 +448,7 @@ const DriverPage = () => {
 
         {/* 3. Vehicle Number - Third */}
         <div className={styles.formGroup}>
-          {/* <label>Vehicle Number</label> */}
+          <label>Vehicle Number</label>
           <select 
             value={startForm.vehicle_id}
             onChange={(e) => setStartForm(prev => ({...prev, vehicle_id: e.target.value}))}
@@ -469,7 +469,7 @@ const DriverPage = () => {
 
         {/* 4. Driver Name - Fourth */}
         <div className={styles.formGroup}>
-          {/* <label>Driver Name</label> */}
+          <label>Driver Name</label>
           <input 
             type="text"
             value={startForm.driver_name}
@@ -481,7 +481,7 @@ const DriverPage = () => {
 
         {/* 5. Contact Number - Fifth */}
         <div className={styles.formGroup}>
-          {/* <label>Driver Contact Number</label> */}
+          <label>Driver Contact Number</label>
           <input 
             type="tel"
             value={startForm.driver_contact}
@@ -494,7 +494,7 @@ const DriverPage = () => {
                 setStartForm(prev => ({...prev, driver_contact: value}));
               }
             }}
-            placeholder="Enter mobile number"
+            placeholder="Enter 10-digit number"
             required
             pattern="[0-9]{10}"
             title="Please enter exactly 10 digits"
@@ -507,7 +507,7 @@ const DriverPage = () => {
                 ? styles.validCount 
                 : styles.digitCount
             }>
-              {/* {startForm.driver_contact.length}/10 digits */}
+              {startForm.driver_contact.length}/10 digits
             </span>
             {startForm.driver_contact && startForm.driver_contact.length !== 10 && (
               <span className={styles.errorText}>❌ Must be exactly 10 digits</span>
@@ -575,18 +575,11 @@ const DriverPage = () => {
           >
             Cancel
           </button>
-                  {/* <button 
-                    type="submit"
-                    className={styles.submitBtn}
-                    disabled={loading || !startForm.start_lat || !startForm.start_lng}
-                  >
-                    {loading ? 'Starting...' : 'Start Trip'}
-                  </button> */}
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        </div>
+      </form>
+    </div>
+  </div>
+)}
 
         {/* End Trip Popup */}
         {showEndPopup && activeTrip && (
