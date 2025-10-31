@@ -595,3 +595,44 @@
     width: 100%;
   }
 }
+
+/* Add to your DriverPage.module.css */
+.addressInput {
+  width: 100%;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 4px;
+  color: #666;
+  cursor: not-allowed;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.addressInput:focus {
+  outline: none;
+  border-color: #ddd;
+}
+
+.addressInput {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: inherit;
+  background-color: #f9f9f9;
+}
+
+.coordinateField {
+  margin-bottom: 8px;
+}
+
+.coordinateLabel {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: #555;
+}
