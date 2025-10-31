@@ -505,7 +505,7 @@ const DriverPage = () => {
 
                 {/* 4. Driver Name - Fourth */}
                 <div className={styles.formGroup}>
-                  <label>Driver Name</label>
+                  
                   <input 
                     type="text"
                     value={startForm.driver_name}
@@ -528,7 +528,7 @@ const DriverPage = () => {
 
                 {/* 5. Contact Number - Fifth */}
                 <div className={styles.formGroup}>
-                  <label>Contact Number</label>
+                
                   <input 
                     type="tel"
                     value={startForm.driver_contact}
@@ -549,7 +549,7 @@ const DriverPage = () => {
 
                 {/* 6. Get Geo Location Button - Sixth */}
                 <div className={styles.formGroup}>
-                  <label>Start Location</label>
+                  
                   <button 
                     type="button"
                     className={styles.locationBtn}
@@ -561,7 +561,7 @@ const DriverPage = () => {
                   
                   <div className={styles.coordinatesDisplay}>
                     <div className={styles.coordinateField}>
-                      <span className={styles.coordinateLabel}>Address:</span>
+                      {/* <span className={styles.coordinateLabel}>Address:</span> */}
                       <textarea 
                         value={startForm.start_address}
                         readOnly
