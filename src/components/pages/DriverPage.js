@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../services/api';
+import { api, getAddressFromCoordinates } from '../services/api';
 import styles from './DriverPage.module.css';
 import { sendTripEmail, initEmailJS } from '../services/email';
 
@@ -13,7 +13,7 @@ const DriverPage = () => {
   const [activeTrip, setActiveTrip] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Form states
+  // Form states with address fields
   const [startForm, setStartForm] = useState({
     plant: '',
     agency_id: '',
@@ -21,12 +21,14 @@ const DriverPage = () => {
     driver_name: '',
     driver_contact: '',
     start_lat: '',
-    start_lng: ''
+    start_lng: '',
+    start_address: ''
   });
 
   const [endForm, setEndForm] = useState({
     end_lat: '',
-    end_lng: ''
+    end_lng: '',
+    end_address: ''
   });
 
   useEffect(() => {
@@ -43,13 +45,12 @@ const DriverPage = () => {
         
         // Extract unique plant names from agencies data
         const uniquePlants = [...new Set(data.map(agency => agency.plant))]
-          .filter(plant => plant && plant.trim() !== '') // Remove null/empty values
+          .filter(plant => plant && plant.trim() !== '')
           .map((plant, index) => ({ 
             id: index + 1, 
             name: plant 
           }));
         
-        console.log('Extracted plants:', uniquePlants);
         setPlants(uniquePlants);
       }
     } catch (error) {
@@ -83,11 +84,11 @@ const DriverPage = () => {
         setActiveTrip(data);
       }
     } catch (error) {
-      console.error('Error checking active Trip:', error);
+      console.error('Error checking active trip:', error);
     }
   };
 
-  const getCurrentLocation = (type) => {
+  const getCurrentLocation = async (type) => {
     setLoading(true);
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser');
@@ -95,34 +96,60 @@ const DriverPage = () => {
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        if (type === 'start') {
-          setStartForm(prev => ({
-            ...prev,
-            start_lat: latitude.toFixed(6),
-            start_lng: longitude.toFixed(6)
-          }));
-        } else {
-          setEndForm(prev => ({
-            ...prev,
-            end_lat: latitude.toFixed(6),
-            end_lng: longitude.toFixed(6)
-          }));
-        }
-        setLoading(false);
-      },
-      (error) => {
-        alert('Error getting location: ' + error.message);
-        setLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
+      });
+
+      const { latitude, longitude } = position.coords;
+      
+      // Get address from coordinates
+      const address = await getAddressFromCoordinates(latitude, longitude);
+      
+      if (type === 'start') {
+        setStartForm(prev => ({
+          ...prev,
+          start_lat: latitude.toFixed(6),
+          start_lng: longitude.toFixed(6),
+          start_address: address
+        }));
+      } else {
+        setEndForm(prev => ({
+          ...prev,
+          end_lat: latitude.toFixed(6),
+          end_lng: longitude.toFixed(6),
+          end_address: address
+        }));
+      }
+    } catch (error) {
+      alert('Error getting location: ' + error.message);
+      // Still set coordinates even if address fails
+      const { latitude, longitude } = error;
+      if (type === 'start') {
+        setStartForm(prev => ({
+          ...prev,
+          start_lat: latitude ? latitude.toFixed(6) : '',
+          start_lng: longitude ? longitude.toFixed(6) : '',
+          start_address: `Coordinates: ${latitude ? latitude.toFixed(6) : 'N/A'}, ${longitude ? longitude.toFixed(6) : 'N/A'}`
+        }));
+      } else {
+        setEndForm(prev => ({
+          ...prev,
+          end_lat: latitude ? latitude.toFixed(6) : '',
+          end_lng: longitude ? longitude.toFixed(6) : '',
+          end_address: `Coordinates: ${latitude ? latitude.toFixed(6) : 'N/A'}, ${longitude ? longitude.toFixed(6) : 'N/A'}`
+        }));
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const calculateDistance = (startLat, startLng, endLat, endLng) => {
-    // Haversine formula to calculate distance between two coordinates
     const R = 6371; // Earth's radius in km
     const dLat = (endLat - startLat) * Math.PI / 180;
     const dLng = (endLng - startLng) * Math.PI / 180;
@@ -135,18 +162,15 @@ const DriverPage = () => {
   };
 
   const handlePlantChange = (plantName) => {
-    console.log('Plant selected:', plantName);
     setStartForm(prev => ({
       ...prev,
       plant: plantName,
-      agency_id: '', // Reset agency when plant changes
-      vehicle_id: '' // Reset vehicle when plant changes
+      agency_id: '',
+      vehicle_id: ''
     }));
     
-    // Filter agencies based on selected plant name
     if (plantName) {
       const filtered = agencies.filter(agency => agency.plant === plantName);
-      console.log('Filtered agencies for plant', plantName, ':', filtered);
       setFilteredAgencies(filtered);
     } else {
       setFilteredAgencies([]);
@@ -155,62 +179,75 @@ const DriverPage = () => {
   };
 
   const handleAgencyChange = (agencyId) => {
-    console.log('Agency selected:', agencyId);
     setStartForm(prev => ({
       ...prev,
       agency_id: agencyId,
-      vehicle_id: '' // Reset vehicle when agency changes
+      vehicle_id: ''
     }));
     loadVehicles(agencyId);
   };
 
   const handleStartTrip = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-
-  try {
-    // Find the selected vehicle to get its number
-    const selectedVehicle = vehicles.find(v => v.id === parseInt(startForm.vehicle_id));
+    e.preventDefault();
     
-    const TripData = {
-      ...startForm,
-      agency_id: parseInt(startForm.agency_id),
-      vehicle_id: parseInt(startForm.vehicle_id),
-      vehicle_number: selectedVehicle?.vehicle_number, // Add vehicle number here
-      plant: startForm.plant,
-      start_lat: parseFloat(startForm.start_lat),
-      start_lng: parseFloat(startForm.start_lng),
-      start_time: new Date().toISOString()
-    };
-
-    console.log('Starting Trip with data:', TripData);
-
-    const { data, error } = await api.startTrip(TripData);
-    
-    if (!error && data) {
-      setActiveTrip(data);
-      setShowStartPopup(false);
-      setStartForm({ 
-        plant: '',
-        agency_id: '', 
-        vehicle_id: '', 
-        driver_name: '', 
-        driver_contact: '', 
-        start_lat: '', 
-        start_lng: '' 
-      });
-      setFilteredAgencies([]);
-      setVehicles([]);
-      alert('Trip started successfully!');
-    } else {
-      alert('Error starting trip: ' + error?.message);
+    // Validate contact number
+    if (startForm.driver_contact.length !== 10) {
+      alert('Please enter a valid 10-digit contact number');
+      return;
     }
-  } catch (error) {
-    alert('Error starting trip: ' + error.message);
-  } finally {
-    setLoading(false);
-  }
-};
+    
+    // Validate driver name
+    if (!/^[A-Za-z\s]+$/.test(startForm.driver_name.trim())) {
+      alert('Please enter a valid driver name (letters and spaces only)');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const selectedVehicle = vehicles.find(v => v.id === parseInt(startForm.vehicle_id));
+      
+      const tripData = {
+        ...startForm,
+        agency_id: parseInt(startForm.agency_id),
+        vehicle_id: parseInt(startForm.vehicle_id),
+        vehicle_number: selectedVehicle?.vehicle_number,
+        plant: startForm.plant,
+        start_lat: parseFloat(startForm.start_lat),
+        start_lng: parseFloat(startForm.start_lng),
+        start_address: startForm.start_address,
+        start_time: new Date().toISOString()
+      };
+
+      console.log('Starting trip with data:', tripData);
+
+      const { data, error } = await api.startTrip(tripData);
+      
+      if (!error && data) {
+        setActiveTrip(data);
+        setShowStartPopup(false);
+        setStartForm({ 
+          plant: '',
+          agency_id: '', 
+          vehicle_id: '', 
+          driver_name: '', 
+          driver_contact: '', 
+          start_lat: '', 
+          start_lng: '',
+          start_address: '' 
+        });
+        setFilteredAgencies([]);
+        setVehicles([]);
+        alert('Trip started successfully!');
+      } else {
+        alert('Error starting trip: ' + error?.message);
+      }
+    } catch (error) {
+      alert('Error starting trip: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEndTrip = async (e) => {
     e.preventDefault();
@@ -228,6 +265,7 @@ const DriverPage = () => {
       const endData = {
         end_lat: parseFloat(endForm.end_lat),
         end_lng: parseFloat(endForm.end_lng),
+        end_address: endForm.end_address,
         end_time: endTime,
         distance_km: parseFloat(distance),
         status: 'completed'
@@ -236,12 +274,11 @@ const DriverPage = () => {
       const { data, error } = await api.endTrip(activeTrip.id, endData);
       
       if (!error && data) {
-        // Send email notification with proper data formatting
         const emailResult = await sendCompletionEmail(data, distance, endTime);
         
         setActiveTrip(null);
         setShowEndPopup(false);
-        setEndForm({ end_lat: '', end_lng: '' });
+        setEndForm({ end_lat: '', end_lng: '', end_address: '' });
         
         if (emailResult.success) {
           alert(`Trip completed! Distance: ${distance} km\nEmail notification has been sent successfully.`);
@@ -258,53 +295,55 @@ const DriverPage = () => {
     }
   };
 
-  // Email sending function
-  const sendCompletionEmail = async (TripData, distance, endTime) => {
+  const sendCompletionEmail = async (tripData, distance, endTime) => {
     try {
-      const agency = agencies.find(a => a.id === TripData.agency_id);
+      const agency = agencies.find(a => a.id === tripData.agency_id);
       
       if (!agency) {
         return { success: false, message: 'Agency not found' };
       }
 
-      // Make sure agency has an email
       if (!agency.email) {
         return { success: false, message: 'Agency email not available' };
       }
 
       // Calculate duration
-      const startTime = new Date(TripData.start_time);
+      const startTime = new Date(tripData.start_time);
       const endTimeDate = new Date(endTime);
       const durationMs = endTimeDate - startTime;
       const hours = Math.floor(durationMs / (1000 * 60 * 60));
       const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
       const duration = `${hours}h ${minutes}m`;
 
-      // Get vehicle number - use the vehicle number from TripData or find from vehicles list
-      const vehicleNumber = TripData.vehicle_number || 
-                           (vehicles.find(v => v.id === TripData.vehicle_id)?.vehicle_number) || 
-                           'N/A';
+      // Format dates
+      const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB') + ' ' + date.toLocaleTimeString('en-GB', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+      };
 
       const emailData = {
-        agencyEmail: agency.email,
-        driverName: TripData.driver_name,
-        agencyName: agency.name,
-        startLocation: {
-          lat: TripData.start_lat,
-          lng: TripData.start_lng
-        },
-        endLocation: {
-          lat: TripData.end_lat,
-          lng: TripData.end_lng
-        },
-        distance: parseFloat(distance),
-        startTime: TripData.start_time,
-        endTime: endTime,
+        agency_email: agency.email,
+        subject: `MANUAL TRIP-MARKET VEHICLE-${tripData.vehicle_number || 'N/A'}`,
+        agency_name: agency.name,
+        plant: tripData.plant,
+        vehicle_number: tripData.vehicle_number || 'N/A',
+        driver_name: tripData.driver_name,
+        driver_contact: tripData.driver_contact,
+        start_time: formatDate(tripData.start_time),
+        end_time: formatDate(endTime),
+        start_lat: tripData.start_lat,
+        start_lng: tripData.start_lng,
+        end_lat: tripData.end_lat,
+        end_lng: tripData.end_lng,
+        start_address: tripData.start_address,
+        end_address: tripData.end_address,
+        distance: distance,
         duration: duration,
-        TripId: TripData.id.toString(),
-        plant: TripData.plant,
-        vehicleNumber: vehicleNumber, // Added vehicle number
-        driverContact: TripData.driver_contact
+        trip_id: tripData.id.toString(),
+        current_date: new Date().toLocaleDateString('en-GB')
       };
 
       console.log('Sending email with data:', emailData);
@@ -322,45 +361,45 @@ const DriverPage = () => {
 
   return (
     <div className={styles.driverPage}>
-  <div className={styles.container}>
-    <div className={styles.statusCard}>
-      <h2 className={styles.statusTitle}>
-        {activeTrip ? '🚗 Trip in Progress' : '✅ Ready to Start'}
-      </h2>
-      
-      {activeTrip ? (
-        <div className={styles.activeTripDetails}>
-          <div className={styles.statusLine}>
-            <span className={styles.label}>Driver:</span>
-            <span className={styles.value}>{activeTrip.driver_name}</span>
-          </div>
-          <div className={styles.statusLine}>
-            <span className={styles.label}>Vehicle:</span>
-            <span className={styles.value}>{activeTrip.vehicle_number || 'N/A'}</span>
-          </div>
-          <div className={styles.statusLine}>
-            <span className={styles.label}>Plant:</span>
-            <span className={styles.value}>{activeTrip.plant}</span>
-          </div>
-          <div className={styles.statusLine}>
-            <span className={styles.label}>Start Time:</span>
-            <span className={styles.value}>
-              {new Date(activeTrip.start_time).toLocaleString()}
-            </span>
-          </div>
-          <div className={styles.statusLine}>
-            <span className={styles.label}>Status:</span>
-            <span className={`${styles.value} ${styles.activeStatus}`}>
-              ● Active
-            </span>
-          </div>
+      <div className={styles.container}>
+        <div className={styles.statusCard}>
+          <h2 className={styles.statusTitle}>
+            {activeTrip ? '🚗 Trip in Progress' : '✅ Ready to Start'}
+          </h2>
+          
+          {activeTrip ? (
+            <div className={styles.activeTripDetails}>
+              <div className={styles.statusLine}>
+                <span className={styles.label}>Driver:</span>
+                <span className={styles.value}>{activeTrip.driver_name}</span>
+              </div>
+              <div className={styles.statusLine}>
+                <span className={styles.label}>Vehicle:</span>
+                <span className={styles.value}>{activeTrip.vehicle_number}</span>
+              </div>
+              <div className={styles.statusLine}>
+                <span className={styles.label}>Plant:</span>
+                <span className={styles.value}>{activeTrip.plant}</span>
+              </div>
+              <div className={styles.statusLine}>
+                <span className={styles.label}>Start Time:</span>
+                <span className={styles.value}>
+                  {new Date(activeTrip.start_time).toLocaleString()}
+                </span>
+              </div>
+              <div className={styles.statusLine}>
+                <span className={styles.label}>Status:</span>
+                <span className={`${styles.value} ${styles.activeStatus}`}>
+                  ● Active
+                </span>
+              </div>
+            </div>
+          ) : (
+            <p className={styles.statusText}>
+              Click Start to begin a new trip.
+            </p>
+          )}
         </div>
-      ) : (
-        <p className={styles.statusText}>
-          Click Start to begin a new trip.
-        </p>
-      )}
-    </div>
 
         <div className={styles.controls}>
           {!activeTrip ? (
@@ -383,203 +422,182 @@ const DriverPage = () => {
         </div>
 
         {/* Start Trip Popup */}
-{showStartPopup && (
-  <div className={styles.popupOverlay}>
-    <div className={styles.popup}>
-      <div className={styles.popupHeader}>
-        <h3>Start New Trip</h3>
-        <button 
-          className={styles.closeBtn}
-          onClick={() => {
-            setShowStartPopup(false);
-            setFilteredAgencies([]);
-            setVehicles([]);
-          }}
-        >
-          ✕
-        </button>
-      </div>
-      
-      <form onSubmit={handleStartTrip} className={styles.form}>
-        {/* 1. Plant Selection - First */}
-        <div className={styles.formGroup}>
-          <label>Plant</label>
-          <select 
-            value={startForm.plant}
-            onChange={(e) => handlePlantChange(e.target.value)}
-            required
-          >
-            <option value="">Select Plant</option>
-            {plants.length > 0 ? (
-              plants.map(plant => (
-                <option key={plant.id} value={plant.name}>
-                  {plant.name}
-                </option>
-              ))
-            ) : (
-              <option value="" disabled>Loading plants...</option>
-            )}
-          </select>
-          {plants.length === 0 && (
-            <p className={styles.noData}>No plants found. Please check your database.</p>
-          )}
-        </div>
+        {showStartPopup && (
+          <div className={styles.popupOverlay}>
+            <div className={styles.popup}>
+              <div className={styles.popupHeader}>
+                <h3>Start New Trip</h3>
+                <button 
+                  className={styles.closeBtn}
+                  onClick={() => {
+                    setShowStartPopup(false);
+                    setFilteredAgencies([]);
+                    setVehicles([]);
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <form onSubmit={handleStartTrip} className={styles.form}>
+                {/* 1. Plant Selection - First */}
+                <div className={styles.formGroup}>
+                  <select 
+                    value={startForm.plant}
+                    onChange={(e) => handlePlantChange(e.target.value)}
+                    required
+                  >
+                    <option value="">Select Plant</option>
+                    {plants.length > 0 ? (
+                      plants.map(plant => (
+                        <option key={plant.id} value={plant.name}>
+                          {plant.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>Loading plants...</option>
+                    )}
+                  </select>
+                  {plants.length === 0 && (
+                    <p className={styles.noData}>No plants found. Please check your database.</p>
+                  )}
+                </div>
 
-        {/* 2. Transporter (Agency) - Second */}
-        <div className={styles.formGroup}>
-          <label>Transporter</label>
-          <select 
-            value={startForm.agency_id}
-            onChange={(e) => handleAgencyChange(e.target.value)}
-            required
-            disabled={!startForm.plant || filteredAgencies.length === 0}
-          >
-            <option value="">Select Transporter</option>
-            {filteredAgencies.map(agency => (
-              <option key={agency.id} value={agency.id}>
-                {agency.name}
-              </option>
-            ))}
-          </select>
-          {startForm.plant && filteredAgencies.length === 0 && (
-            <p className={styles.noData}>No transporters found for {startForm.plant}</p>
-          )}
-        </div>
+                {/* 2. Transporter (Agency) - Second */}
+                <div className={styles.formGroup}>
+                  <select 
+                    value={startForm.agency_id}
+                    onChange={(e) => handleAgencyChange(e.target.value)}
+                    required
+                    disabled={!startForm.plant || filteredAgencies.length === 0}
+                  >
+                    <option value="">Select Transporter</option>
+                    {filteredAgencies.map(agency => (
+                      <option key={agency.id} value={agency.id}>
+                        {agency.name}
+                      </option>
+                    ))}
+                  </select>
+                  {startForm.plant && filteredAgencies.length === 0 && (
+                    <p className={styles.noData}>No transporters found for {startForm.plant}</p>
+                  )}
+                </div>
 
-        {/* 3. Vehicle Number - Third */}
-        <div className={styles.formGroup}>
-          <label>Vehicle Number</label>
-          <select 
-            value={startForm.vehicle_id}
-            onChange={(e) => setStartForm(prev => ({...prev, vehicle_id: e.target.value}))}
-            required
-            disabled={!startForm.agency_id || vehicles.length === 0}
-          >
-            <option value="">Select Vehicle</option>
-            {vehicles.map(vehicle => (
-              <option key={vehicle.id} value={vehicle.id}>
-                {vehicle.vehicle_number}
-              </option>
-            ))}
-          </select>
-          {startForm.agency_id && vehicles.length === 0 && (
-            <p className={styles.noData}>No vehicles found for this transporter</p>
-          )}
-        </div>
+                {/* 3. Vehicle Number - Third */}
+                <div className={styles.formGroup}>
+                  <select 
+                    value={startForm.vehicle_id}
+                    onChange={(e) => setStartForm(prev => ({...prev, vehicle_id: e.target.value}))}
+                    required
+                    disabled={!startForm.agency_id || vehicles.length === 0}
+                  >
+                    <option value="">Select Vehicle</option>
+                    {vehicles.map(vehicle => (
+                      <option key={vehicle.id} value={vehicle.id}>
+                        {vehicle.vehicle_number}
+                      </option>
+                    ))}
+                  </select>
+                  {startForm.agency_id && vehicles.length === 0 && (
+                    <p className={styles.noData}>No vehicles found for this transporter</p>
+                  )}
+                </div>
 
-        {/* 4. Driver Name - Fourth */}
-        <div className={styles.formGroup}>
-          <label>Driver Name</label>
-          <input 
-            type="text"
-            value={startForm.driver_name}
-            onChange={(e) => setStartForm(prev => ({...prev, driver_name: e.target.value}))}
-            placeholder="Enter driver name"
-            required
-          />
-        </div>
+                {/* 4. Driver Name - Fourth */}
+                <div className={styles.formGroup}>
+                  <label>Driver Name</label>
+                  <input 
+                    type="text"
+                    value={startForm.driver_name}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Allow only letters and spaces
+                      if (/^[A-Za-z\s]*$/.test(value)) {
+                        setStartForm(prev => ({...prev, driver_name: value}));
+                      }
+                    }}
+                    placeholder="Enter driver name"
+                    required
+                    pattern="[A-Za-z\s]+"
+                    title="Please enter only letters and spaces"
+                  />
+                  {startForm.driver_name && !/^[A-Za-z\s]+$/.test(startForm.driver_name) && (
+                    <p className={styles.errorText}>Only letters and spaces are allowed</p>
+                  )}
+                </div>
 
-        {/* 5. Contact Number - Fifth */}
-        <div className={styles.formGroup}>
-          <label>Driver Contact Number</label>
-          <input 
-            type="tel"
-            value={startForm.driver_contact}
-            onChange={(e) => {
-              let value = e.target.value;
-              // Remove any non-digit characters
-              value = value.replace(/\D/g, '');
-              // Limit to 10 digits
-              if (value.length <= 10) {
-                setStartForm(prev => ({...prev, driver_contact: value}));
-              }
-            }}
-            placeholder="Enter 10-digit number"
-            required
-            pattern="[0-9]{10}"
-            title="Please enter exactly 10 digits"
-            maxLength="10"
-            inputMode="numeric"
-          />
-          <div className={styles.validationInfo}>
-            <span className={
-              startForm.driver_contact.length === 10 
-                ? styles.validCount 
-                : styles.digitCount
-            }>
-              {startForm.driver_contact.length}/10 digits
-            </span>
-            {startForm.driver_contact && startForm.driver_contact.length !== 10 && (
-              <span className={styles.errorText}>❌ Must be exactly 10 digits</span>
-            )}
-            {startForm.driver_contact.length === 10 && (
-              <span className={styles.successText}>✅ Valid number</span>
-            )}
-          </div>
-        </div>
+                {/* 5. Contact Number - Fifth */}
+                <div className={styles.formGroup}>
+                  <label>Contact Number</label>
+                  <input 
+                    type="tel"
+                    value={startForm.driver_contact}
+                    onChange={(e) => {
+                      let value = e.target.value;
+                      // Remove any non-digit characters
+                      value = value.replace(/\D/g, '');
+                      // Limit to 10 digits
+                      if (value.length <= 10) {
+                        setStartForm(prev => ({...prev, driver_contact: value}));
+                      }
+                    }}
+                    placeholder="Enter mobile number"
+                    required
+                    maxLength="10"
+                  />
+                </div>
 
-        {/* 6. Get Geo Location Button - Sixth */}
-        <div className={styles.formGroup}>
-          <label>Location Coordinates</label>
-          <button 
-            type="button"
-            className={styles.locationBtn}
-            onClick={() => getCurrentLocation('start')}
-            disabled={loading}
-          >
-            📍 Get Geo Location
-          </button>
-          
-          {/* Location Coordinates Display */}
-          <div className={styles.coordinatesDisplay}>
-            <div className={styles.coordinateField}>
-              <span className={styles.coordinateLabel}>Latitude:</span>
-              <input 
-                type="text"
-                value={startForm.start_lat}
-                readOnly
-                className={styles.readonlyInput}
-                placeholder="Click Get Geo Location"
-              />
+                {/* 6. Get Geo Location Button - Sixth */}
+                <div className={styles.formGroup}>
+                  <label>Start Location</label>
+                  <button 
+                    type="button"
+                    className={styles.locationBtn}
+                    onClick={() => getCurrentLocation('start')}
+                    disabled={loading}
+                  >
+                    📍 Get Current Location
+                  </button>
+                  
+                  <div className={styles.coordinatesDisplay}>
+                    <div className={styles.coordinateField}>
+                      <span className={styles.coordinateLabel}>Address:</span>
+                      <textarea 
+                        value={startForm.start_address}
+                        readOnly
+                        className={styles.addressInput}
+                        placeholder="Address will appear here after getting location"
+                        rows="3"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form Actions */}
+                <div className={styles.formActions}>
+                  <button 
+                    type="submit"
+                    className={styles.submitBtn}
+                    disabled={loading || !startForm.start_lat || !startForm.start_lng || startForm.driver_contact.length !== 10}
+                  >
+                    {loading ? 'Starting...' : 'Start Trip'}
+                  </button>
+                  <button 
+                    type="button"
+                    className={styles.cancelBtn}
+                    onClick={() => {
+                      setShowStartPopup(false);
+                      setFilteredAgencies([]);
+                      setVehicles([]);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
             </div>
-            <div className={styles.coordinateField}>
-              <span className={styles.coordinateLabel}>Longitude:</span>
-              <input 
-                type="text"
-                value={startForm.start_lng}
-                readOnly
-                className={styles.readonlyInput}
-                placeholder="Click Get Geo Location"
-              />
-            </div>
           </div>
-        </div>
-
-        {/* Form Actions */}
-        <div className={styles.formActions}>
-          <button 
-            type="submit"
-            className={styles.submitBtn}
-            disabled={loading || !startForm.start_lat || !startForm.start_lng || startForm.driver_contact.length !== 10}
-          >
-            {loading ? 'Starting...' : 'Start Trip'}
-          </button>
-          <button 
-            type="button"
-            className={styles.cancelBtn}
-            onClick={() => {
-              setShowStartPopup(false);
-              setFilteredAgencies([]);
-              setVehicles([]);
-            }}
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-)}
+        )}
 
         {/* End Trip Popup */}
         {showEndPopup && activeTrip && (
@@ -606,28 +624,19 @@ const DriverPage = () => {
               
               <form onSubmit={handleEndTrip} className={styles.form}>
                 <div className={styles.formGroup}>
-                  <label>End Location Coordinates</label>
+                  <label>End Location</label>
                   <div className={styles.coordinatesDisplay}>
                     <div className={styles.coordinateField}>
-                      <span className={styles.coordinateLabel}>Latitude:</span>
-                      <input 
-                        type="text"
-                        value={endForm.end_lat}
+                      <span className={styles.coordinateLabel}>Address:</span>
+                      <textarea 
+                        value={endForm.end_address}
                         readOnly
-                        className={styles.readonlyInput}
-                        placeholder="Click Get Geo Location"
+                        className={styles.addressInput}
+                        placeholder="Address will appear here after getting location"
+                        rows="3"
                       />
                     </div>
-                    <div className={styles.coordinateField}>
-                      <span className={styles.coordinateLabel}>Longitude:</span>
-                      <input 
-                        type="text"
-                        value={endForm.end_lng}
-                        readOnly
-                        className={styles.readonlyInput}
-                        placeholder="Click Get Geo Location"
-                      />
-                    </div>
+                    {/* Latitude and Longitude fields removed from End Trip popup */}
                   </div>
                   <button 
                     type="button"
