@@ -202,7 +202,7 @@
 .formGroup input,
 .formGroup select {
   width: 100%;
-  padding: 1rem;
+  padding: 0.3rem;
   border: 2px solid #e1e5e9;
   border-radius: 10px;
   font-size: 1rem;
