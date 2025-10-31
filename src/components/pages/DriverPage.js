@@ -396,7 +396,7 @@ const DriverPage = () => {
             </div>
           ) : (
             <p className={styles.statusText}>
-              Click Start to begin a new trip.
+              
             </p>
           )}
         </div>
