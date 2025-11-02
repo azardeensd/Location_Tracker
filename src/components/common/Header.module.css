@@ -1,5 +1,5 @@
 .header {
-  background: linear-gradient(135deg, #0c31d4 0%, #0c31d4 100%);
+  background: linear-gradient(135deg, #0a32e5 0%, #0a32e5 100%);
   color: white;
   padding: 1rem 0;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
@@ -9,10 +9,10 @@
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 11000px;
   margin: 0 auto;
   padding: 0 1rem;
-  display: flex;
+  /* display: flex; */
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
@@ -30,7 +30,7 @@
   margin: 0;
   background: linear-gradient(45deg, #fff, #e0e7ff);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  /* -webkit-text-fill-color: transparent; */
   background-clip: text;
 }
 
@@ -47,7 +47,7 @@
   padding: 0.75rem 1.5rem;
   border-radius: 15px;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(74, 3, 3, 0.2);
 }
 
 .date {
