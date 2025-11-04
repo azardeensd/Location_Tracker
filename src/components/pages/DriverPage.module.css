@@ -78,14 +78,14 @@
 }
 
 .startBtn {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: linear-gradient(135deg, #1274c9 0%, #1f08c9e0 100%);
   color: white;
 }
 
 .startBtn:hover:not(:disabled) {
   transform: translateY(-4px) scale(1.02);
   box-shadow: 0 15px 30px rgba(79, 172, 254, 0.4);
-  background: linear-gradient(135deg, #3aa0fe 0%, #00e0fe 100%);
+  background: linear-gradient(135deg, #3aa0fe 0%, #040999 100%);
 }
 
 .endBtn {
@@ -144,7 +144,7 @@
   align-items: center;
   padding: 1.5rem 2rem;
   border-bottom: 1px solid #eee;
-  background: linear-gradient(135deg, #0b2bbd 0%, #0b2bbd 100%);
+  background: linear-gradient(135deg, #031462 0%, #0b2bbd 100%);
   color: rgb(244, 243, 243);
   border-radius: 20px 20px 0 0;
 }
