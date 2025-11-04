@@ -6,6 +6,7 @@ import styles from './UserManagement.module.css';
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [agencies, setAgencies] = useState([]);
+  const [plants, setPlants] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -29,6 +30,7 @@ const UserManagement = () => {
 
     loadUsers();
     loadAgencies();
+    loadPlants();
   }, [navigate]);
 
   const loadUsers = async () => {
@@ -45,7 +47,6 @@ const UserManagement = () => {
     }
   };
 
-  // Add the missing loadAgencies function
   const loadAgencies = async () => {
     try {
       const { data, error } = await api.getAgencies();
@@ -57,6 +58,19 @@ const UserManagement = () => {
     } catch (error) {
       console.error('Error loading agencies:', error);
       setMessage({ type: 'error', text: 'Error loading agencies' });
+    }
+  };
+
+  const loadPlants = async () => {
+    try {
+      const { data, error } = await api.getPlants();
+      if (!error && data) {
+        setPlants(data);
+      } else {
+        console.error('Failed to load plants:', error);
+      }
+    } catch (error) {
+      console.error('Error loading plants:', error);
     }
   };
 
@@ -129,7 +143,18 @@ const UserManagement = () => {
 
   const getPlantName = (agencyId) => {
     const agency = agencies.find(a => a.id === agencyId);
-    return agency ? agency.plant : 'N/A';
+    if (!agency || !agency.plant_id) return 'N/A';
+    
+    const plant = plants.find(p => p.id === agency.plant_id);
+    return plant ? plant.name : 'N/A';
+  };
+
+  const getPlantLocation = (agencyId) => {
+    const agency = agencies.find(a => a.id === agencyId);
+    if (!agency || !agency.plant_id) return 'N/A';
+    
+    const plant = plants.find(p => p.id === agency.plant_id);
+    return plant ? plant.location : 'N/A';
   };
 
   const handleLogout = () => {
@@ -140,18 +165,6 @@ const UserManagement = () => {
 
   return (
     <div className={styles.adminContainer}>
-      <div className={styles.adminHeader}>
-        <div className={styles.headerLeft}>
-          <h1>🔐 Admin Dashboard</h1>
-          <p>User Management System</p>
-        </div>
-        <div className={styles.headerRight}>
-          <button onClick={handleLogout} className={styles.logoutBtn}>
-            Admin Logout
-          </button>
-        </div>
-      </div>
-
       <div className={styles.userManagement}>
         <div className={styles.header}>
           <h1>User Management</h1>
@@ -209,19 +222,22 @@ const UserManagement = () => {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label>Agency *</label>
+                  <label>Transporter *</label>
                   <select
                     name="agency_id"
                     value={userForm.agency_id}
                     onChange={handleInputChange}
                     required
                   >
-                    <option value="">Select Agency</option>
-                    {agencies.map(agency => (
-                      <option key={agency.id} value={agency.id}>
-                        {agency.name} ({agency.plant})
-                      </option>
-                    ))}
+                    <option value="">Select Transporter</option>
+                    {agencies.map(agency => {
+                      const plant = plants.find(p => p.id === agency.plant_id);
+                      return (
+                        <option key={agency.id} value={agency.id}>
+                          {agency.name} {plant ? `- ${plant.name} (${plant.location})` : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -281,8 +297,9 @@ const UserManagement = () => {
                 <thead>
                   <tr>
                     <th>Username</th>
-                    <th>Agency</th>
+                    <th>Transporter</th>
                     <th>Plant</th>
+                    <th>Plant Location</th>
                     <th>Role</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -293,7 +310,8 @@ const UserManagement = () => {
                     <tr key={user.id}>
                       <td>{user.username}</td>
                       <td>{getAgencyName(user.agency_id)}</td>
-                      <td>{user.plant || getPlantName(user.agency_id)}</td>
+                      <td>{getPlantName(user.agency_id)}</td>
+                      <td>{getPlantLocation(user.agency_id)}</td>
                       <td>
                         <span className={`${styles.role} ${styles[user.role]}`}>
                           {user.role}
