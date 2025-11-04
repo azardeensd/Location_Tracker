@@ -471,8 +471,8 @@ const DriverPage = () => {
       <div className={styles.container}>
         {/* Device info for debugging */}
         {process.env.NODE_ENV === 'development' && deviceId && (
-          <div style={{ background: '#f0f0f0', padding: '5px', marginBottom: '10px', borderRadius: '5px', fontSize: '12px' }}>
-            <strong>Device ID:</strong> {deviceId}
+          <div style={{  padding: '5px', marginBottom: '10px', borderRadius: '5px', fontSize: '12px' }}>
+            {/* <strong>Device ID:</strong> {deviceId} */}
           </div>
         )}
         
@@ -482,41 +482,39 @@ const DriverPage = () => {
           </h2>
           
           {activeTrip ? (
-            <div className={styles.activeTripDetails}>
-              <div className={styles.statusLine}>
-                <span className={styles.label}>Plant :</span>
-                <span className={styles.value}>{activeTrip.plant}</span>
-              </div>
-              <div className={styles.statusLine}>
-                <span className={styles.label}>Transporter :</span>
-                <span className={styles.value}>
-                  {agencies.find(a => a.id === activeTrip.agency_id)?.name}
-                </span>
-              </div>
-              <div className={styles.statusLine}>
-                <span className={styles.label}>Vehicle No :</span>
-                <span className={styles.value}>{activeTrip.vehicle_number}</span>
-              </div>
-              <div className={styles.statusLine}>
-                <span className={styles.label}>Driver :</span>
-                <span className={styles.value}>{activeTrip.driver_name}</span>
-              </div>
-              <div className={styles.statusLine}>
-                <span className={styles.label}>Start time :</span>
-                <span className={styles.value}>
-                  {new Date(activeTrip.start_time).toLocaleTimeString()}
-                </span>
-              </div>
-              <div className={styles.statusLine}>
-                <span className={styles.label}>Status :</span>
-                <span className={`${styles.value} ${styles.activeStatus}`}>
-                  ● Active
-                </span>
-              </div>
-            </div>
+  <div className={styles.activeTripDetails}>
+    <div className={styles.statusLine}>
+      <span className={styles.label}>Plant :</span>
+      <span className={styles.value}>{activeTrip.plant}</span>
+    </div>
+    <div className={styles.statusLine}>
+      <span className={styles.label}>Transporter :</span>
+      <span className={styles.value}>
+        {agencies.find(a => a.id === activeTrip.agency_id)?.name}
+      </span>
+    </div>
+    <div className={styles.statusLine}>
+      <span className={styles.label}>Vehicle No :</span>
+      <span className={styles.value}>{activeTrip.vehicle_number}</span>
+    </div>
+    <div className={styles.statusLine}>
+      <span className={styles.label}>Driver :</span>
+      <span className={styles.value}>{activeTrip.driver_name}</span>
+    </div>
+    <div className={styles.statusLine}>
+      <span className={styles.label}>Start Date & Time :</span>
+      <span className={styles.value}>
+        {new Date(activeTrip.start_time).toLocaleString()}
+      </span>
+    </div>
+    <div className={styles.statusLine}>
+      <span className={styles.label}>Start Location :</span>
+      <span className={styles.value}>{activeTrip.start_address}</span>
+    </div>
+  </div>
           ) : (
             <p className={styles.statusText}>
-              Click Start to begin a new trip.
+              
             </p>
           )}
         </div>
@@ -683,7 +681,7 @@ const DriverPage = () => {
                   >
                     {loading ? 'Starting...' : 'Start Trip'}
                   </button>
-                  <button 
+                  {/* <button 
                     type="button"
                     className={styles.cancelBtn}
                     onClick={() => {
@@ -692,7 +690,7 @@ const DriverPage = () => {
                     }}
                   >
                     Cancel
-                  </button>
+                  </button> */}
                 </div>
               </form>
             </div>
