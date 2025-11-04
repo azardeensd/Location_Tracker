@@ -264,9 +264,9 @@
 }
 
 .usersTable th {
-  background: #f8f9fa;
+  background: #c68802f3;
   font-weight: 600;
-  color: #333;
+  color: #faf8f8;
 }
 
 .usersTable tr:hover {
