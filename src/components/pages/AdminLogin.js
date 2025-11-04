@@ -32,27 +32,46 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      const { data, error } = await api.login(formData);
+      console.log('Attempting admin login with:', formData);
       
-      if (error) {
-        setError(error.message || 'Login failed. Please try again.');
+      // Use adminLogin instead of login
+      const { data, error: apiError } = await api.adminLogin(formData);
+      
+      console.log('API Response:', { data, apiError });
+      
+      if (apiError) {
+        setError(apiError.message || 'Login failed. Please try again.');
         return;
       }
 
-      if (data && data.success) {
-        // Check if user is admin
-        if (data.user.role === 'admin') {
-          // Store admin session separately
-          localStorage.setItem('adminToken', data.token);
-          localStorage.setItem('adminData', JSON.stringify(data.user));
+      // Check if we have valid data
+      if (data) {
+        // Check if user is admin based on the actual API response structure
+        const userData = data.user || data.admin || data;
+        const token = data.token || data.access_token;
+        
+        console.log('User data:', userData);
+        console.log('Token:', token);
+
+        if (userData.role === 'admin') {
+          // Store admin session
+          localStorage.setItem('adminToken', token);
+          localStorage.setItem('adminData', JSON.stringify(userData));
           
-          // Redirect to admin dashboard
+          // Verify storage
+          console.log('Stored adminToken:', localStorage.getItem('adminToken'));
+          console.log('Stored adminData:', localStorage.getItem('adminData'));
+          
+          // Redirect to admin dashboard - use /admin/users since that's what we have routes for
           navigate('/admin/users');
         } else {
           setError('Access denied. Admin privileges required.');
+          // Clear any existing admin data
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('adminData');
         }
       } else {
-        setError('Invalid credentials');
+        setError('Invalid credentials or server error');
       }
     } catch (err) {
       setError('Network error. Please try again.');
@@ -61,6 +80,8 @@ const AdminLogin = () => {
       setLoading(false);
     }
   };
+
+  // Remove the duplicate handleLogout function that was here incorrectly
 
   return (
     <div className={styles.adminLoginPage}>
@@ -122,7 +143,7 @@ const AdminLogin = () => {
           </form>
 
           <div className={styles.footer}>
-            <p>Go to <a href="/driver" className={styles.driverLink}>Driver Portal</a></p>
+            <p>Go to <a href="/login" className={styles.driverLink}>Driver Portal</a></p>
           </div>
         </div>
       </div>
