@@ -1,6 +1,6 @@
 .loginPage {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0c31d4 0%, #674ba2 100%);
+  background: linear-gradient(135deg, #140354 0%, #210476 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -15,7 +15,7 @@
 .loginCard {
   background: white;
   border-radius: 20px;
-  padding: 2.5rem;
+  padding: 1.3rem;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
@@ -26,9 +26,9 @@
 }
 
 .logo {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  color: #0c31d4;
+  color: #0617b1;
   margin: 0 0 0.5rem 0;
 }
 
@@ -134,5 +134,84 @@
   
   .logo {
     font-size: 1.75rem;
+  }
+}
+/* Add to your existing login.module.css */
+
+.captchaContainer {
+  margin: 20px 0;
+  display: flex;
+  justify-content: center;
+  min-height: 78px; /* Prevent layout shift when CAPTCHA loads */
+}
+
+.formActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.loginButton {
+  flex: 2;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #010772 0%, #068dcb 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.loginButton:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.loginButton:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.resetButton {
+  flex: 1;
+  padding: 12px 20px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.resetButton:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.resetButton:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .formActions {
+    flex-direction: column;
+  }
+  
+  .loginButton,
+  .resetButton {
+    flex: none;
+  }
+  
+  .captchaContainer {
+    transform: scale(0.9);
+    transform-origin: center;
   }
 }
