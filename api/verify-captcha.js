@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     }
 
     // Verify with Google reCAPTCHA or hCaptcha (replace SITE_SECRET with your actual key)
-    const secretKey = "6LfrPAAsAAAAAOwUphq0Le1tnPrYok4Iwi98evyO";
+    const secretKey = "6LfrPAAsAAAAAG3jD43DtudSzyB-IBC92mQsqHHu";
 
     const response = await fetch(
       `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`,
