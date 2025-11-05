@@ -13,6 +13,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // New state for password visibility
   const navigate = useNavigate();
   const recaptchaRef = useRef();
 
@@ -25,6 +26,11 @@ const Login = () => {
       [e.target.name]: e.target.value
     });
     setError(''); // Clear error when user starts typing
+  };
+
+  // Toggle password visibility
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   const handleCaptchaChange = (value) => {
@@ -116,6 +122,7 @@ const Login = () => {
     });
     setError('');
     setCaptchaVerified(false);
+    setShowPassword(false); // Reset password visibility
     if (recaptchaRef.current) {
       recaptchaRef.current.reset();
     }
@@ -138,9 +145,6 @@ const Login = () => {
             )}
 
             <div className={styles.formGroup}>
-              {/* <label htmlFor="username" className={styles.label}>
-                User Name
-              </label> */}
               <input
                 type="text"
                 id="username"
@@ -155,20 +159,27 @@ const Login = () => {
             </div>
 
             <div className={styles.formGroup}>
-              {/* <label htmlFor="password" className={styles.label}>
-                Password
-              </label> */}
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className={styles.input}
-                placeholder="Enter your password"
-                required
-                disabled={loading}
-              />
+              <div className={styles.passwordContainer}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={styles.passwordInput}
+                  placeholder="Enter your password"
+                  required
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  className={styles.passwordToggle}
+                  onClick={togglePasswordVisibility}
+                  disabled={loading}
+                >
+                  {showPassword ?'👁️':'🙈'}
+                </button>
+              </div>
             </div>
 
             {/* CAPTCHA Component */}
