@@ -172,7 +172,7 @@ const DriverPage = () => {
         }
       }
     } catch (error) {
-      console.error('Error loading agencies and plants:', error);
+      console.error('Error loading Transporter and plants:', error);
     }
   };
 
@@ -407,11 +407,11 @@ const DriverPage = () => {
       const agency = agencies.find(a => a.id === tripData.agency_id);
       
       if (!agency) {
-        return { success: false, message: 'Agency not found' };
+        return { success: false, message: 'Transporter not found' };
       }
 
       if (!agency.email) {
-        return { success: false, message: 'Agency email not available' };
+        return { success: false, message: 'Transporter email not available' };
       }
 
       // Calculate duration
