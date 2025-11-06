@@ -34,7 +34,6 @@ const AdminLogin = () => {
     try {
       console.log('Attempting admin login with:', formData);
       
-      // Use adminLogin instead of login
       const { data, error: apiError } = await api.adminLogin(formData);
       
       console.log('API Response:', { data, apiError });
@@ -46,29 +45,30 @@ const AdminLogin = () => {
 
       // Check if we have valid data
       if (data) {
-        // Check if user is admin based on the actual API response structure
-        const userData = data.user || data.admin || data;
-        const token = data.token || data.access_token;
+        const userData = data.user || data;
+        const token = data.token;
         
         console.log('User data:', userData);
-        console.log('Token:', token);
 
-        if (userData.role === 'admin') {
-          // Store admin session
-          localStorage.setItem('adminToken', token);
-          localStorage.setItem('adminData', JSON.stringify(userData));
-          
-          // Verify storage
-          console.log('Stored adminToken:', localStorage.getItem('adminToken'));
-          console.log('Stored adminData:', localStorage.getItem('adminData'));
-          
-          // Redirect to admin dashboard - use /admin/users since that's what we have routes for
-          navigate('/admin/users');
+        // Check for admin or plant_admin role
+        if (userData.role === 'admin' || userData.role === 'plant_admin') {
+          // Store session based on role
+          if (userData.role === 'admin') {
+            localStorage.setItem('adminToken', token);
+            localStorage.setItem('adminData', JSON.stringify(userData));
+            navigate('/admin/users');
+          } else if (userData.role === 'plant_admin') {
+            localStorage.setItem('plantAdminToken', token);
+            localStorage.setItem('plantAdminData', JSON.stringify(userData));
+            navigate('/vehicles'); // Redirect to vehicles management
+          }
         } else {
           setError('Access denied. Admin privileges required.');
           // Clear any existing admin data
           localStorage.removeItem('adminToken');
           localStorage.removeItem('adminData');
+          localStorage.removeItem('plantAdminToken');
+          localStorage.removeItem('plantAdminData');
         }
       } else {
         setError('Invalid credentials or server error');
@@ -80,8 +80,6 @@ const AdminLogin = () => {
       setLoading(false);
     }
   };
-
-  // Remove the duplicate handleLogout function that was here incorrectly
 
   return (
     <div className={styles.adminLoginPage}>
