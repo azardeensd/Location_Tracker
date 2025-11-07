@@ -1,8 +1,59 @@
-.driverPage {
-  min-height: calc(100vh - 120px);
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  padding: 3rem 0;
+.pageWrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
+
+.driverPage {
+  flex: 1;
+  background: #c3cfe2;
+  padding: 0;
+}
+
+.container {
+  flex: 1;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Update existing styles to ensure proper spacing */
+.statusCard {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.controls {
+  text-align: center;
+  margin-top: auto;
+}
+
+/* Ensure popups are properly positioned */
+.popupOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+  padding: 1rem;
+}
+
+/* Mobile responsiveness updates */
 
 .container {
   max-width: 800px;
@@ -645,4 +696,26 @@
   background: #f8f9fa;
   color: #666;
   cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem 0.5rem;
+  }
+  
+  .statusCard {
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0.5rem;
+  }
+  
+  .statusCard {
+    padding: 1rem;
+    border-radius: 15px;
+  }
 }
