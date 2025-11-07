@@ -27,8 +27,7 @@ const verifyCaptcha = async (token) => {
       console.log('Development mode: CAPTCHA verification bypassed');
       return true;
     }
-    
-    // Production: Call your backend API
+
     const response = await fetch('/api/verify-captcha', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -45,82 +44,137 @@ const verifyCaptcha = async (token) => {
 };
 
 // Common login logic (without CAPTCHA) - UPDATED FOR NEW STRUCTURE
+// In your api.js - update the commonLogin function
+// FIXED commonLogin function in api.js
 const commonLogin = async (credentials) => {
-  const { data, error } = await supabase
-    .from('users')
-    .select(`
-      *,
-      agencies (
-        name,
-        plant_id,
-        plants (
-          name,
-          location
-        )
-      )
-    `)
-    .eq('username', credentials.username)
-    .eq('password', credentials.password)
-    .eq('is_active', true)
-    .single();
+  try {
+    console.log('🔐 Login attempt for:', credentials.username);
 
-  if (error) {
-    console.log('Database query error:', error);
-    return { data: null, error };
-  }
+    // First, get the basic user data without complex joins
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', credentials.username)
+      .eq('password', credentials.password)
+      .eq('is_active', true)
+      .single();
 
-  if (data) {
-    // Get plant name from the nested plants relation
-    const plantName = data.agencies?.plants?.name || 'N/A';
-    const plantLocation = data.agencies?.plants?.location || 'N/A';
+    if (userError) {
+      console.log('❌ Database query error:', userError);
+      return { data: null, error: userError };
+    }
+
+    if (!userData) {
+      console.log('❌ No user found with provided credentials');
+      return {
+        data: null,
+        error: { message: 'Invalid credentials or inactive account' }
+      };
+    }
+
+    console.log('✅ User found:', userData);
+
+    let plantName = 'N/A';
+    let plantLocation = 'N/A';
+    let plantId = userData.plant_id;
+    let transporterName = null;
+
+    // For plant_admin users - get plant details
+    if (userData.role === 'plant_admin' && userData.plant_id) {
+      console.log('🏭 Fetching plant details for plant admin');
+      const { data: plantData, error: plantError } = await supabase
+        .from('plants')
+        .select('name, location')
+        .eq('id', userData.plant_id)
+        .single();
+
+      if (!plantError && plantData) {
+        plantName = plantData.name;
+        plantLocation = plantData.location;
+        console.log('✅ Plant details found:', plantData);
+      } else {
+        console.log('⚠️ No plant details found for plant admin');
+      }
+    }
+    // For driver users - get agency and plant details
+    else if (userData.role === 'driver' && userData.agency_id) {
+      console.log('🚚 Fetching agency details for driver');
+      const { data: agencyData, error: agencyError } = await supabase
+        .from('agencies')
+        .select('name, plant_id, plants(name, location)')
+        .eq('id', userData.agency_id)
+        .single();
+
+      if (!agencyError && agencyData) {
+        transporterName = agencyData.name;
+        plantId = agencyData.plant_id;
+        
+        if (agencyData.plants) {
+          plantName = agencyData.plants.name;
+          plantLocation = agencyData.plants.location;
+        }
+        console.log('✅ Agency details found:', agencyData);
+      }
+    }
+
+    // For plant_admin without plant_id, try to get it from user data
+    if (userData.role === 'plant_admin' && !plantId) {
+      plantId = userData.plant_id;
+      console.log('⚠️ Plant admin has no plant_id in database');
+    }
+
+    console.log('🎯 Final user info:', {
+      username: userData.username,
+      role: userData.role,
+      plantId,
+      plantName,
+      plantLocation
+    });
 
     const token = btoa(JSON.stringify({
-      userId: data.id,
-      username: data.username,
-      agency_id: data.agency_id,
-      plant: plantName, // Use plant name from plants table
+      userId: userData.id,
+      username: userData.username,
+      agency_id: userData.agency_id,
+      plant: plantName,
       plant_location: plantLocation,
-      transporter_name: data.agencies?.name,
-      role: data.role,
+      plant_id: plantId, // This is crucial for plant admin
+      transporter_name: transporterName,
+      role: userData.role,
       timestamp: Date.now()
     }));
 
-    console.log('Login successful for user:', data.username);
+    console.log('✅ Login successful for user:', userData.username);
     
     return {
       data: {
         success: true,
         token,
         user: {
-          id: data.id,
-          username: data.username,
-          agency_id: data.agency_id,
-          plant: plantName, // Use plant name from plants table
+          id: userData.id,
+          username: userData.username,
+          agency_id: userData.agency_id,
+          plant: plantName,
           plant_location: plantLocation,
-          transporter_name: data.agencies?.name,
-          role: data.role
+          plant_id: plantId, // This must be set for plant admin
+          transporter_name: transporterName,
+          role: userData.role
         }
       },
       error: null
     };
-  } else {
-    console.log('No user found with provided credentials');
-    return {
-      data: null,
-      error: { message: 'Invalid credentials or inactive account' }
-    };
+  } catch (error) {
+    console.error('💥 Exception in commonLogin:', error);
+    return { data: null, error };
   }
 };
 
 // Simple device fingerprinting without restricted globals
 export const generateDeviceId = () => {
-  // Check if we already have a device ID
   const storedDeviceId = localStorage.getItem('deviceId');
   if (storedDeviceId) {
     return storedDeviceId;
   }
 
-  // Generate a unique device fingerprint using available browser information
   const fingerprintComponents = [
     navigator.userAgent,
     navigator.language,
@@ -131,7 +185,6 @@ export const generateDeviceId = () => {
     !!navigator.javaEnabled && navigator.javaEnabled(),
   ].join('|');
 
-  // Create a simple hash
   let hash = 0;
   for (let i = 0; i < fingerprintComponents.length; i++) {
     const char = fingerprintComponents.charCodeAt(i);
@@ -141,7 +194,6 @@ export const generateDeviceId = () => {
 
   const deviceId = 'device_' + Math.abs(hash).toString(36) + '_' + Date.now().toString(36);
   
-  // Store in localStorage
   localStorage.setItem('deviceId', deviceId);
   console.log('Generated new device ID:', deviceId);
   
@@ -207,8 +259,9 @@ const getSimpleLocationDescription = async (lat, lng) => {
 };
 
 // API functions with device tracking
+// FIXED API functions with proper plant filtering
 export const api = {
-  // Get all agencies - UPDATED FOR NEW STRUCTURE
+  // Get all agencies
   getAgencies: async () => {
     try {
       const { data, error } = await supabase
@@ -235,49 +288,33 @@ export const api = {
     }
   },
 
-  // Create agency - UPDATED FOR NEW STRUCTURE
-  createAgency: async (agencyData) => {
+  // FIXED: Get agencies by plant - PROPER FILTERING
+  getAgenciesByPlant: async (plant_id) => {
     try {
+      console.log('🔍 Fetching agencies for plant ID:', plant_id);
+      
       const { data, error } = await supabase
         .from('agencies')
-        .insert([{
-          name: agencyData.name,
-          email: agencyData.email,
-          plant_id: agencyData.plant_id, // Now using plant_id instead of plant
-          created_at: new Date().toISOString()
-        }])
-        .select()
-        .single();
+        .select(`
+          *,
+          plants (
+            name,
+            location,
+            code
+          )
+        `)
+        .eq('plant_id', plant_id) // This is the key filter
+        .order('name');
       
       if (error) {
-        console.error('Error creating agency:', error);
+        console.error('❌ Error fetching plant agencies:', error);
         return { data: null, error };
       }
       
+      console.log('✅ Plant agencies fetched:', data?.length || 0);
       return { data, error: null };
     } catch (error) {
-      console.error('Exception creating agency:', error);
-      return { data: null, error };
-    }
-  },
-
-  // Get vehicles by agency
-  getVehiclesByAgency: async (agencyId) => {
-    try {
-      const { data, error } = await supabase
-        .from('vehicles')
-        .select('*')
-        .eq('agency_id', agencyId)
-        .order('vehicle_number');
-      
-      if (error) {
-        console.error('Error fetching vehicles:', error);
-        return { data: null, error };
-      }
-      
-      return { data, error: null };
-    } catch (error) {
-      console.error('Exception fetching vehicles:', error);
+      console.error('❌ Exception fetching plant agencies:', error);
       return { data: null, error };
     }
   },
@@ -287,7 +324,17 @@ export const api = {
     try {
       const { data, error } = await supabase
         .from('vehicles')
-        .select('*')
+        .select(`
+          *,
+          agencies (
+            name,
+            plant_id,
+            plants (
+              name,
+              location
+            )
+          )
+        `)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -302,30 +349,196 @@ export const api = {
     }
   },
 
-  // Create vehicle
-  createVehicle: async (vehicleData) => {
+  // NEW: Get vehicles by agency
+  getVehiclesByAgency: async (agencyId) => {
     try {
+      console.log('🚗 Fetching vehicles for agency ID:', agencyId);
+      
       const { data, error } = await supabase
         .from('vehicles')
-        .insert([{
-          agency_id: vehicleData.agency_id,
-          vehicle_number: vehicleData.vehicle_number,
-          vehicle_type: vehicleData.vehicle_type,
-          capacity: vehicleData.capacity,
-          status: vehicleData.status,
-          created_at: new Date().toISOString()
-        }])
+        .select(`
+          *,
+          agencies (
+            name,
+            plant_id,
+            plants (
+              name,
+              location
+            )
+          )
+        `)
+        .eq('agency_id', agencyId)
+        .order('vehicle_number');
+      
+      if (error) {
+        console.error('❌ Error fetching agency vehicles:', error);
+        return { data: null, error };
+      }
+      
+      console.log('✅ Agency vehicles fetched:', data?.length || 0);
+      return { data, error: null };
+    } catch (error) {
+      console.error('❌ Exception fetching agency vehicles:', error);
+      return { data: null, error };
+    }
+  },
+
+  // NEW: Update vehicle status
+  updateVehicleStatus: async (vehicleId, status) => {
+    try {
+      console.log('🔄 Updating vehicle status:', { vehicleId, status });
+      
+      const { data, error } = await supabase
+        .from('vehicles')
+        .update({ 
+          status: status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', vehicleId)
         .select()
         .single();
       
       if (error) {
-        console.error('Error creating vehicle:', error);
+        console.error('❌ Error updating vehicle status:', error);
         return { data: null, error };
       }
       
+      console.log('✅ Vehicle status updated successfully:', data);
       return { data, error: null };
     } catch (error) {
-      console.error('Exception creating vehicle:', error);
+      console.error('💥 Exception updating vehicle status:', error);
+      return { data: null, error };
+    }
+  },
+
+  // FIXED: Get vehicles by plant - PROPER FILTERING
+  getVehiclesByPlantAlternative: async (plantId) => {
+    try {
+      console.log('🔍 Fetching vehicles for plant ID (alternative):', plantId);
+      
+      // First get agencies for this plant
+      const { data: agencies, error: agenciesError } = await supabase
+        .from('agencies')
+        .select('id')
+        .eq('plant_id', plantId);
+      
+      if (agenciesError) {
+        console.error('Error fetching plant agencies:', agenciesError);
+        return { data: null, error: agenciesError };
+      }
+      
+      if (!agencies || agencies.length === 0) {
+        console.log('No agencies found for plant, returning empty vehicles');
+        return { data: [], error: null };
+      }
+      
+      const agencyIds = agencies.map(agency => agency.id);
+      console.log('Agency IDs for plant:', agencyIds);
+      
+      // Then get vehicles for these agencies
+      const { data: vehicles, error: vehiclesError } = await supabase
+        .from('vehicles')
+        .select(`
+          *,
+          agencies (
+            name,
+            plant_id,
+            plants (
+              name,
+              location
+            )
+          )
+        `)
+        .in('agency_id', agencyIds)
+        .order('vehicle_number');
+      
+      if (vehiclesError) {
+        console.error('Error fetching vehicles for agencies:', vehiclesError);
+        return { data: null, error: vehiclesError };
+      }
+      
+      console.log('✅ Plant vehicles fetched (alternative):', vehicles?.length || 0);
+      return { data: vehicles, error: null };
+    } catch (error) {
+      console.error('Exception in alternative method:', error);
+      return { data: null, error };
+    }
+  },
+
+  // Create vehicle - UPDATED to NOT include plant_id
+  createVehicle: async (vehicleData) => {
+    try {
+      console.log('🚗 CREATE VEHICLE API - START');
+      console.log('Received agency_id:', vehicleData.agency_id, 'Type:', typeof vehicleData.agency_id);
+
+      // First, let's check what agencies exist in the database
+      console.log('🔍 Checking all agencies in database...');
+      const { data: allAgencies, error: allAgenciesError } = await supabase
+        .from('agencies')
+        .select('id, name')
+        .limit(10);
+
+      if (!allAgenciesError) {
+        console.log('📋 First 10 agencies in database:', allAgencies);
+      }
+
+      // Now check the specific agency exists
+      console.log('🔍 Looking for specific agency:', vehicleData.agency_id);
+      const { data: agency, error: agencyError } = await supabase
+        .from('agencies')
+        .select('id, name, plant_id')
+        .eq('id', vehicleData.agency_id)
+        .single();
+
+      console.log('🔍 Agency query result:', { agency, agencyError });
+
+      if (agencyError) {
+        console.error('❌ Agency not found:', agencyError);
+        return { 
+          data: null, 
+          error: { 
+            message: `Agency not found. Available agencies: ${allAgencies?.map(a => `${a.name} (${a.id})`).join(', ')}` 
+          } 
+        };
+      }
+
+      if (!agency) {
+        console.error('❌ Agency is null');
+        return { 
+          data: null, 
+          error: { message: 'Selected agency does not exist in database' } 
+        };
+      }
+
+      console.log('✅ Agency found:', agency);
+
+      // Create vehicle WITHOUT plant_id - vehicles table doesn't need it
+      const vehicleInsertData = {
+        agency_id: vehicleData.agency_id,
+        vehicle_number: vehicleData.vehicle_number,
+        vehicle_type: vehicleData.vehicle_type,
+        capacity: vehicleData.capacity,
+        status: vehicleData.status,
+        created_at: new Date().toISOString()
+      };
+
+      console.log('📦 Creating vehicle with:', vehicleInsertData);
+
+      const { data, error } = await supabase
+        .from('vehicles')
+        .insert([vehicleInsertData])
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('❌ Error creating vehicle:', error);
+        return { data: null, error };
+      }
+
+      console.log('✅ Vehicle created successfully:', data);
+      return { data, error: null };
+    } catch (error) {
+      console.error('💥 Exception creating vehicle:', error);
       return { data: null, error };
     }
   },
@@ -554,66 +767,83 @@ export const api = {
 
   // Create user with automatic plant assignment
   createUser: async (userData) => {
-    try {
-      console.log('Creating user with data:', userData);
+  try {
+    console.log('🔧 CREATE USER API CALL - START');
+    console.log('Received user data:', userData);
+    
+    let plant_id = userData.plant_id || null;
+
+    // For plant_admin role, use the provided plant_id directly
+    if (userData.role === 'plant_admin' && userData.plant_id) {
+      console.log('👤 Plant Admin user - using provided plant_id:', userData.plant_id);
+      plant_id = userData.plant_id;
+    }
+    // For drivers, get plant_id from agency if not provided
+    else if (userData.agency_id && !plant_id) {
+      console.log('🚚 Driver user - fetching plant_id for agency:', userData.agency_id);
       
-      let plant_id = null;
-
-      // If agency_id is provided, fetch the plant_id
-      if (userData.agency_id) {
-        console.log('Fetching plant_id for agency_id:', userData.agency_id);
-        
-        const { data: agency, error: agencyError } = await supabase
-          .from('agencies')
-          .select('plant_id')
-          .eq('id', userData.agency_id)
-          .single();
-        
-        if (agencyError) {
-          console.error('Error fetching agency:', agencyError);
-          return { data: null, error: agencyError };
-        }
-        
-        if (agency && agency.plant_id) {
-          plant_id = agency.plant_id;
-          console.log('Auto-set plant_id to:', plant_id);
-        } else {
-          console.warn('No plant_id found for agency:', userData.agency_id);
-        }
-      }
-
-      // Prepare the user data with plant_id
-      const userWithPlant = {
-        username: userData.username,
-        password: userData.password,
-        agency_id: userData.agency_id,
-        plant_id: plant_id,
-        role: userData.role || 'driver',
-        is_active: userData.is_active !== undefined ? userData.is_active : true,
-        created_by: userData.created_by || null
-      };
-
-      console.log('Final user data to insert:', userWithPlant);
-
-      // Insert the user
-      const { data, error } = await supabase
-        .from('users')
-        .insert([userWithPlant])
-        .select()
+      const { data: agency, error: agencyError } = await supabase
+        .from('agencies')
+        .select('plant_id')
+        .eq('id', userData.agency_id)
         .single();
       
-      if (error) {
-        console.error('Error inserting user:', error);
-        return { data: null, error };
+      if (agencyError) {
+        console.error('❌ Error fetching agency:', agencyError);
+        return { data: null, error: agencyError };
       }
+      
+      if (agency && agency.plant_id) {
+        plant_id = agency.plant_id;
+        console.log('✅ Auto-set plant_id from agency:', plant_id);
+      } else {
+        console.warn('⚠️ No plant_id found for agency:', userData.agency_id);
+      }
+    }
 
-      console.log('User created successfully:', data);
-      return { data, error: null };
-    } catch (error) {
-      console.error('Exception creating user:', error);
+    // Prepare the user data
+    const userWithPlant = {
+      username: userData.username,
+      password: userData.password,
+      agency_id: userData.agency_id || null,
+      plant_id: plant_id, // This should be set correctly now
+      role: userData.role || 'driver',
+      is_active: userData.is_active !== undefined ? userData.is_active : true,
+      created_by: userData.created_by || null,
+      created_at: new Date().toISOString() // Add created_at
+    };
+
+    console.log('📦 Final user data to insert:', userWithPlant);
+
+    // Insert the user
+    const { data, error } = await supabase
+      .from('users')
+      .insert([userWithPlant])
+      .select(`
+        *,
+        agencies (
+          name,
+          plant_id,
+          plants (
+            name,
+            location
+          )
+        )
+      `)
+      .single();
+    
+    if (error) {
+      console.error('❌ Error inserting user:', error);
       return { data: null, error };
     }
-  },
+
+    console.log('✅ User created successfully:', data);
+    return { data, error: null };
+  } catch (error) {
+    console.error('💥 Exception creating user:', error);
+    return { data: null, error };
+  }
+},
 
   // UPDATE USER FUNCTION
   updateUser: async (userId, userData) => {
@@ -789,12 +1019,12 @@ export const api = {
   },
 
   // Update plant
-  updatePlant: async (plantId, plantData) => {
+  updatePlant: async (plant_id, plantData) => {
     try {
       const { data, error } = await supabase
         .from('plants')
         .update(plantData)
-        .eq('id', plantId)
+        .eq('id', plant_id)
         .select()
         .single();
       
@@ -811,13 +1041,13 @@ export const api = {
   },
 
   // Delete plant
-  deletePlant: async (plantId) => {
+  deletePlant: async (plant_id) => {
     try {
       // First check if any agencies are using this plant
       const { data: agencies, error: agenciesError } = await supabase
         .from('agencies')
         .select('id')
-        .eq('plant_id', plantId)
+        .eq('plant_id', plant_id)
         .limit(1);
       
       if (agenciesError) {
@@ -835,7 +1065,7 @@ export const api = {
       const { data, error } = await supabase
         .from('plants')
         .delete()
-        .eq('id', plantId);
+        .eq('id', plant_id);
       
       if (error) {
         console.error('Error deleting plant:', error);
@@ -850,12 +1080,12 @@ export const api = {
   },
 
   // Get plant by ID
-  getPlantById: async (plantId) => {
+  getPlantById: async (plant_id) => {
     try {
       const { data, error } = await supabase
         .from('plants')
         .select('*')
-        .eq('id', plantId)
+        .eq('id', plant_id)
         .single();
 
       if (error) {
