@@ -473,9 +473,7 @@ const DriverPage = () => {
 
   return (
     <div className={styles.driverPage}>
-      {/* Header Component */}
-      <Header />
-      
+            
       <div className={styles.container}>
         {/* Device info for debugging */}
         {process.env.NODE_ENV === 'development' && deviceId && (
