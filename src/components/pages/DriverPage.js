@@ -1,8 +1,9 @@
-// DriverPage.js - FINAL OPTIMIZED VERSION
+// DriverPage.js - UPDATED WITH HEADER
 import React, { useState, useEffect } from 'react';
 import { api, getAddressFromCoordinates, getDeviceId } from '../services/api';
 import styles from './DriverPage.module.css';
 import { sendTripEmail, initEmailJS } from '../services/email';
+import Header from '../common/Header';
 
 const DriverPage = () => {
   const [agencies, setAgencies] = useState([]);
@@ -137,7 +138,7 @@ const DriverPage = () => {
               return [userAgency];
             });
             
-            // Load vehicles for user's agency
+            // Load vehicles for user's agency - NOW FILTERING ONLY ACTIVE VEHICLES
             await loadVehicles(userAgency.id);
             
             // Update form with agency data
@@ -172,10 +173,11 @@ const DriverPage = () => {
         }
       }
     } catch (error) {
-      console.error('Error loading Transporter and plants:', error);
+      console.error('Error loading agencies and plants:', error);
     }
   };
 
+  // UPDATED: Load only active vehicles
   const loadVehicles = async (agencyId) => {
     try {
       if (!agencyId) {
@@ -185,7 +187,10 @@ const DriverPage = () => {
       
       const { data, error } = await api.getVehiclesByAgency(agencyId);
       if (!error && data) {
-        setVehicles(data);
+        // Filter only active vehicles
+        const activeVehicles = data.filter(vehicle => vehicle.status === 'active');
+        console.log(`📊 Vehicles loaded: ${data.length} total, ${activeVehicles.length} active`);
+        setVehicles(activeVehicles);
       } else {
         setVehicles([]);
       }
@@ -407,11 +412,11 @@ const DriverPage = () => {
       const agency = agencies.find(a => a.id === tripData.agency_id);
       
       if (!agency) {
-        return { success: false, message: 'Transporter not found' };
+        return { success: false, message: 'Agency not found' };
       }
 
       if (!agency.email) {
-        return { success: false, message: 'Transporter email not available' };
+        return { success: false, message: 'Agency email not available' };
       }
 
       // Calculate duration
@@ -468,6 +473,9 @@ const DriverPage = () => {
 
   return (
     <div className={styles.driverPage}>
+      {/* Header Component */}
+      <Header />
+      
       <div className={styles.container}>
         {/* Device info for debugging */}
         {process.env.NODE_ENV === 'development' && deviceId && (
@@ -482,39 +490,39 @@ const DriverPage = () => {
           </h2>
           
           {activeTrip ? (
-  <div className={styles.activeTripDetails}>
-    <div className={styles.statusLine}>
-      <span className={styles.label}>Plant :</span>
-      <span className={styles.value}>{activeTrip.plant}</span>
-    </div>
-    <div className={styles.statusLine}>
-      <span className={styles.label}>Transporter :</span>
-      <span className={styles.value}>
-        {agencies.find(a => a.id === activeTrip.agency_id)?.name}
-      </span>
-    </div>
-    <div className={styles.statusLine}>
-      <span className={styles.label}>Vehicle No :</span>
-      <span className={styles.value}>{activeTrip.vehicle_number}</span>
-    </div>
-    <div className={styles.statusLine}>
-      <span className={styles.label}>Driver :</span>
-      <span className={styles.value}>{activeTrip.driver_name}</span>
-    </div>
-    <div className={styles.statusLine}>
-      <span className={styles.label}>Start Date & Time :</span>
-      <span className={styles.value}>
-        {new Date(activeTrip.start_time).toLocaleString()}
-      </span>
-    </div>
-    <div className={styles.statusLine}>
-      <span className={styles.label}>Start Location :</span>
-      <span className={styles.value}>{activeTrip.start_address}</span>
-    </div>
-  </div>
+            <div className={styles.activeTripDetails}>
+              <div className={styles.statusLine}>
+                <span className={styles.label}>Plant :</span>
+                <span className={styles.value}>{activeTrip.plant}</span>
+              </div>
+              <div className={styles.statusLine}>
+                <span className={styles.label}>Transporter :</span>
+                <span className={styles.value}>
+                  {agencies.find(a => a.id === activeTrip.agency_id)?.name}
+                </span>
+              </div>
+              <div className={styles.statusLine}>
+                <span className={styles.label}>Vehicle No :</span>
+                <span className={styles.value}>{activeTrip.vehicle_number}</span>
+              </div>
+              <div className={styles.statusLine}>
+                <span className={styles.label}>Driver :</span>
+                <span className={styles.value}>{activeTrip.driver_name}</span>
+              </div>
+              <div className={styles.statusLine}>
+                <span className={styles.label}>Start Date & Time :</span>
+                <span className={styles.value}>
+                  {new Date(activeTrip.start_time).toLocaleString()}
+                </span>
+              </div>
+              <div className={styles.statusLine}>
+                <span className={styles.label}>Start Location :</span>
+                <span className={styles.value}>{activeTrip.start_address}</span>
+              </div>
+            </div>
           ) : (
             <p className={styles.statusText}>
-              
+              {/* Empty state text if needed */}
             </p>
           )}
         </div>
@@ -559,7 +567,7 @@ const DriverPage = () => {
               <form onSubmit={handleStartTrip} className={styles.form}>
                 {/* 1. Plant - Auto-filled and read-only */}
                 <div className={styles.formGroup}>
-                  <label>Plant</label>
+                  
                   <input 
                     type="text"
                     value={startForm.plant}
@@ -571,7 +579,7 @@ const DriverPage = () => {
 
                 {/* 2. Transporter (Agency) - Auto-filled and read-only */}
                 <div className={styles.formGroup}>
-                  <label>Transporter</label>
+                  
                   <input 
                     type="text"
                     value={filteredAgencies.find(a => a.id === parseInt(startForm.agency_id))?.name || ''}
@@ -581,9 +589,9 @@ const DriverPage = () => {
                   />
                 </div>
 
-                {/* 3. Vehicle Number - User selects from their agency's vehicles */}
+                {/* 3. Vehicle Number - User selects from their agency's ACTIVE vehicles */}
                 <div className={styles.formGroup}>
-                  <label>Vehicle Number</label>
+                  
                   <select 
                     value={startForm.vehicle_id}
                     onChange={(e) => setStartForm(prev => ({...prev, vehicle_id: e.target.value}))}
@@ -593,18 +601,19 @@ const DriverPage = () => {
                     <option value="">Select Vehicle</option>
                     {vehicles.map(vehicle => (
                       <option key={vehicle.id} value={vehicle.id}>
-                        {vehicle.vehicle_number}
+                        {vehicle.vehicle_number} {vehicle.status === 'inactive' ? '(Inactive)' : ''}
                       </option>
                     ))}
                   </select>
                   {startForm.agency_id && vehicles.length === 0 && (
-                    <p className={styles.noData}>No vehicles found for your agency</p>
+                    <p className={styles.noData}>No active vehicles found for your agency</p>
                   )}
+                  
                 </div>
 
                 {/* 4. Driver Name - User enters */}
                 <div className={styles.formGroup}>
-                  <label>Driver Name</label>
+                  
                   <input 
                     type="text"
                     value={startForm.driver_name}
@@ -627,7 +636,7 @@ const DriverPage = () => {
 
                 {/* 5. Contact Number - User enters */}
                 <div className={styles.formGroup}>
-                  <label>Contact Number</label>
+                  
                   <input 
                     type="tel"
                     value={startForm.driver_contact}
@@ -648,7 +657,7 @@ const DriverPage = () => {
 
                 {/* 6. Get Geo Location Button */}
                 <div className={styles.formGroup}>
-                  <label>Start Location</label>
+                  
                   <button 
                     type="button"
                     className={styles.locationBtn}
