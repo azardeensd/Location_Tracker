@@ -1,4 +1,4 @@
-// DriverPage.js - UPDATED WITH HEADER
+// DriverPage.js - UPDATED WITH COMMON CONTAINER AND HEADER
 import React, { useState, useEffect } from 'react';
 import { api, getAddressFromCoordinates, getDeviceId } from '../services/api';
 import styles from './DriverPage.module.css';
@@ -472,297 +472,299 @@ const DriverPage = () => {
   };
 
   return (
-    <div className={styles.driverPage}>
-            
-      <div className={styles.container}>
-        {/* Device info for debugging */}
-        {process.env.NODE_ENV === 'development' && deviceId && (
-          <div style={{  padding: '5px', marginBottom: '10px', borderRadius: '5px', fontSize: '12px' }}>
-            {/* <strong>Device ID:</strong> {deviceId} */}
-          </div>
-        )}
-        
-        <div className={styles.statusCard}>
-          <h2 className={styles.statusTitle}>
-            {activeTrip ? '🚗 Trip in Progress' : '✅ Ready to Start'}
-          </h2>
+    <div className={styles.pageWrapper}>
+      <Header />
+      <div className={styles.driverPage}>
+        <div className={styles.container}>
+          {/* Device info for debugging */}
+          {process.env.NODE_ENV === 'development' && deviceId && (
+            <div style={{ padding: '5px', marginBottom: '10px', borderRadius: '5px', fontSize: '12px' }}>
+              {/* <strong>Device ID:</strong> {deviceId} */}
+            </div>
+          )}
           
-          {activeTrip ? (
-            <div className={styles.activeTripDetails}>
-              <div className={styles.statusLine}>
-                <span className={styles.label}>Plant :</span>
-                <span className={styles.value}>{activeTrip.plant}</span>
-              </div>
-              <div className={styles.statusLine}>
-                <span className={styles.label}>Transporter :</span>
-                <span className={styles.value}>
-                  {agencies.find(a => a.id === activeTrip.agency_id)?.name}
-                </span>
-              </div>
-              <div className={styles.statusLine}>
-                <span className={styles.label}>Vehicle No :</span>
-                <span className={styles.value}>{activeTrip.vehicle_number}</span>
-              </div>
-              <div className={styles.statusLine}>
-                <span className={styles.label}>Driver :</span>
-                <span className={styles.value}>{activeTrip.driver_name}</span>
-              </div>
-              <div className={styles.statusLine}>
-                <span className={styles.label}>Start Date & Time :</span>
-                <span className={styles.value}>
-                  {new Date(activeTrip.start_time).toLocaleString()}
-                </span>
-              </div>
-              <div className={styles.statusLine}>
-                <span className={styles.label}>Start Location :</span>
-                <span className={styles.value}>{activeTrip.start_address}</span>
-              </div>
-            </div>
-          ) : (
-            <p className={styles.statusText}>
-              {/* Empty state text if needed */}
-            </p>
-          )}
-        </div>
-
-        <div className={styles.controls}>
-          {!activeTrip ? (
-            <button 
-              className={`${styles.btn} ${styles.startBtn}`}
-              onClick={() => setShowStartPopup(true)}
-              disabled={loading}
-            >
-              🚗 Start Trip
-            </button>
-          ) : (
-            <button 
-              className={`${styles.btn} ${styles.endBtn}`}
-              onClick={() => setShowEndPopup(true)}
-              disabled={loading}
-            >
-              🏁 End Trip
-            </button>
-          )}
-        </div>
-
-        {/* Start Trip Popup */}
-        {showStartPopup && (
-          <div className={styles.popupOverlay}>
-            <div className={styles.popup}>
-              <div className={styles.popupHeader}>
-                <h3>Start New Trip</h3>
-                <button 
-                  className={styles.closeBtn}
-                  onClick={() => {
-                    setShowStartPopup(false);
-                    setVehicles([]);
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-              
-              <form onSubmit={handleStartTrip} className={styles.form}>
-                {/* 1. Plant - Auto-filled and read-only */}
-                <div className={styles.formGroup}>
-                  
-                  <input 
-                    type="text"
-                    value={startForm.plant}
-                    readOnly
-                    className={styles.readonlyInput}
-                    placeholder="Plant will be auto-filled"
-                  />
+          <div className={styles.statusCard}>
+            <h2 className={styles.statusTitle}>
+              {activeTrip ? '🚗 Trip in Progress' : '✅ Ready to Start'}
+            </h2>
+            
+            {activeTrip ? (
+              <div className={styles.activeTripDetails}>
+                <div className={styles.statusLine}>
+                  <span className={styles.label}>Plant :</span>
+                  <span className={styles.value}>{activeTrip.plant}</span>
                 </div>
-
-                {/* 2. Transporter (Agency) - Auto-filled and read-only */}
-                <div className={styles.formGroup}>
-                  
-                  <input 
-                    type="text"
-                    value={filteredAgencies.find(a => a.id === parseInt(startForm.agency_id))?.name || ''}
-                    readOnly
-                    className={styles.readonlyInput}
-                    placeholder="Transporter will be auto-filled"
-                  />
+                <div className={styles.statusLine}>
+                  <span className={styles.label}>Transporter :</span>
+                  <span className={styles.value}>
+                    {agencies.find(a => a.id === activeTrip.agency_id)?.name}
+                  </span>
                 </div>
-
-                {/* 3. Vehicle Number - User selects from their agency's ACTIVE vehicles */}
-                <div className={styles.formGroup}>
-                  
-                  <select 
-                    value={startForm.vehicle_id}
-                    onChange={(e) => setStartForm(prev => ({...prev, vehicle_id: e.target.value}))}
-                    required
-                    disabled={!startForm.agency_id || vehicles.length === 0}
-                  >
-                    <option value="">Select Vehicle</option>
-                    {vehicles.map(vehicle => (
-                      <option key={vehicle.id} value={vehicle.id}>
-                        {vehicle.vehicle_number} {vehicle.status === 'inactive' ? '(Inactive)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                  {startForm.agency_id && vehicles.length === 0 && (
-                    <p className={styles.noData}>No active vehicles found for your agency</p>
-                  )}
-                  
+                <div className={styles.statusLine}>
+                  <span className={styles.label}>Vehicle No :</span>
+                  <span className={styles.value}>{activeTrip.vehicle_number}</span>
                 </div>
-
-                {/* 4. Driver Name - User enters */}
-                <div className={styles.formGroup}>
-                  
-                  <input 
-                    type="text"
-                    value={startForm.driver_name}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      // Allow only letters and spaces
-                      if (/^[A-Za-z\s]*$/.test(value)) {
-                        setStartForm(prev => ({...prev, driver_name: value}));
-                      }
-                    }}
-                    placeholder="Enter driver name"
-                    required
-                    pattern="[A-Za-z\s]+"
-                    title="Please enter only letters and spaces"
-                  />
-                  {startForm.driver_name && !/^[A-Za-z\s]+$/.test(startForm.driver_name) && (
-                    <p className={styles.errorText}>Only letters and spaces are allowed</p>
-                  )}
+                <div className={styles.statusLine}>
+                  <span className={styles.label}>Driver :</span>
+                  <span className={styles.value}>{activeTrip.driver_name}</span>
                 </div>
-
-                {/* 5. Contact Number - User enters */}
-                <div className={styles.formGroup}>
-                  
-                  <input 
-                    type="tel"
-                    value={startForm.driver_contact}
-                    onChange={(e) => {
-                      let value = e.target.value;
-                      // Remove any non-digit characters
-                      value = value.replace(/\D/g, '');
-                      // Limit to 10 digits
-                      if (value.length <= 10) {
-                        setStartForm(prev => ({...prev, driver_contact: value}));
-                      }
-                    }}
-                    placeholder="Enter mobile number"
-                    required
-                    maxLength="10"
-                  />
+                <div className={styles.statusLine}>
+                  <span className={styles.label}>Start Date & Time :</span>
+                  <span className={styles.value}>
+                    {new Date(activeTrip.start_time).toLocaleString()}
+                  </span>
                 </div>
-
-                {/* 6. Get Geo Location Button */}
-                <div className={styles.formGroup}>
-                  
-                  <button 
-                    type="button"
-                    className={styles.locationBtn}
-                    onClick={() => getCurrentLocation('start')}
-                    disabled={loading}
-                  >
-                    📍 Get Current Location
-                  </button>
-                  
-                  <div className={styles.coordinatesDisplay}>
-                    <div className={styles.coordinateField}>
-                      <span className={styles.coordinateLabel}>Address:</span>
-                      <textarea 
-                        value={startForm.start_address}
-                        readOnly
-                        className={styles.addressInput}
-                        placeholder="Address will appear here after getting location"
-                        rows="3"
-                      />
-                    </div>
-                  </div>
+                <div className={styles.statusLine}>
+                  <span className={styles.label}>Start Location :</span>
+                  <span className={styles.value}>{activeTrip.start_address}</span>
                 </div>
-
-                {/* Form Actions */}
-                <div className={styles.formActions}>
-                  <button 
-                    type="submit"
-                    className={styles.submitBtn}
-                    disabled={loading || !startForm.start_lat || !startForm.start_lng || startForm.driver_contact.length !== 10 || !startForm.vehicle_id}
-                  >
-                    {loading ? 'Starting...' : 'Start Trip'}
-                  </button>
-                
-                </div>
-              </form>
-            </div>
+              </div>
+            ) : (
+              <p className={styles.statusText}>
+                {/* Empty state text if needed */}
+              </p>
+            )}
           </div>
-        )}
 
-        {/* End Trip Popup */}
-        {showEndPopup && activeTrip && (
-          <div className={styles.popupOverlay}>
-            <div className={styles.popup}>
-              <div className={styles.popupHeader}>
-                <h3>End Trip</h3>
-                <button 
-                  className={styles.closeBtn}
-                  onClick={() => setShowEndPopup(false)}
-                >
-                  ✕
-                </button>
-              </div>
+          <div className={styles.controls}>
+            {!activeTrip ? (
+              <button 
+                className={`${styles.btn} ${styles.startBtn}`}
+                onClick={() => setShowStartPopup(true)}
+                disabled={loading}
+              >
+                🚗 Start Trip
+              </button>
+            ) : (
+              <button 
+                className={`${styles.btn} ${styles.endBtn}`}
+                onClick={() => setShowEndPopup(true)}
+                disabled={loading}
+              >
+                🏁 End Trip
+              </button>
+            )}
+          </div>
 
-              <div className={styles.TripInfo}>
-                <p><strong>Driver:</strong> {activeTrip.driver_name}</p>
-                <p><strong>Contact:</strong> {activeTrip.driver_contact}</p>
-                <p><strong>Vehicle:</strong> {activeTrip.vehicle_number}</p>
-                <p><strong>Agency:</strong> {agencies.find(a => a.id === activeTrip.agency_id)?.name}</p>
-                <p><strong>Plant:</strong> {activeTrip.plant}</p>
-                <p><strong>Start Time:</strong> {new Date(activeTrip.start_time).toLocaleString()}</p>
-              </div>
-              
-              <form onSubmit={handleEndTrip} className={styles.form}>
-                <div className={styles.formGroup}>
-                  <label>End Location</label>
-                  <div className={styles.coordinatesDisplay}>
-                    <div className={styles.coordinateField}>
-                      <span className={styles.coordinateLabel}>Address:</span>
-                      <textarea 
-                        value={endForm.end_address}
-                        readOnly
-                        className={styles.addressInput}
-                        placeholder="Address will appear here after getting location"
-                        rows="3"
-                      />
-                    </div>
-                  </div>
+          {/* Start Trip Popup */}
+          {showStartPopup && (
+            <div className={styles.popupOverlay}>
+              <div className={styles.popup}>
+                <div className={styles.popupHeader}>
+                  <h3>Start New Trip</h3>
                   <button 
-                    type="button"
-                    className={styles.locationBtn}
-                    onClick={() => getCurrentLocation('end')}
-                    disabled={loading}
+                    className={styles.closeBtn}
+                    onClick={() => {
+                      setShowStartPopup(false);
+                      setVehicles([]);
+                    }}
                   >
-                    📍 Get Current Location
+                    ✕
                   </button>
                 </div>
+                
+                <form onSubmit={handleStartTrip} className={styles.form}>
+                  {/* 1. Plant - Auto-filled and read-only */}
+                  <div className={styles.formGroup}>
+                    
+                    <input 
+                      type="text"
+                      value={startForm.plant}
+                      readOnly
+                      className={styles.readonlyInput}
+                      placeholder="Plant will be auto-filled"
+                    />
+                  </div>
 
-                <div className={styles.formActions}>
+                  {/* 2. Transporter (Agency) - Auto-filled and read-only */}
+                  <div className={styles.formGroup}>
+                    
+                    <input 
+                      type="text"
+                      value={filteredAgencies.find(a => a.id === parseInt(startForm.agency_id))?.name || ''}
+                      readOnly
+                      className={styles.readonlyInput}
+                      placeholder="Transporter will be auto-filled"
+                    />
+                  </div>
+
+                  {/* 3. Vehicle Number - User selects from their agency's ACTIVE vehicles */}
+                  <div className={styles.formGroup}>
+                    
+                    <select 
+                      value={startForm.vehicle_id}
+                      onChange={(e) => setStartForm(prev => ({...prev, vehicle_id: e.target.value}))}
+                      required
+                      disabled={!startForm.agency_id || vehicles.length === 0}
+                    >
+                      <option value="">Select Vehicle</option>
+                      {vehicles.map(vehicle => (
+                        <option key={vehicle.id} value={vehicle.id}>
+                          {vehicle.vehicle_number} {vehicle.status === 'inactive' ? '(Inactive)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    {startForm.agency_id && vehicles.length === 0 && (
+                      <p className={styles.noData}>No active vehicles found for your agency</p>
+                    )}
+                    
+                  </div>
+
+                  {/* 4. Driver Name - User enters */}
+                  <div className={styles.formGroup}>
+                    
+                    <input 
+                      type="text"
+                      value={startForm.driver_name}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Allow only letters and spaces
+                        if (/^[A-Za-z\s]*$/.test(value)) {
+                          setStartForm(prev => ({...prev, driver_name: value}));
+                        }
+                      }}
+                      placeholder="Enter driver name"
+                      required
+                      pattern="[A-Za-z\s]+"
+                      title="Please enter only letters and spaces"
+                    />
+                    {startForm.driver_name && !/^[A-Za-z\s]+$/.test(startForm.driver_name) && (
+                      <p className={styles.errorText}>Only letters and spaces are allowed</p>
+                    )}
+                  </div>
+
+                  {/* 5. Contact Number - User enters */}
+                  <div className={styles.formGroup}>
+                    
+                    <input 
+                      type="tel"
+                      value={startForm.driver_contact}
+                      onChange={(e) => {
+                        let value = e.target.value;
+                        // Remove any non-digit characters
+                        value = value.replace(/\D/g, '');
+                        // Limit to 10 digits
+                        if (value.length <= 10) {
+                          setStartForm(prev => ({...prev, driver_contact: value}));
+                        }
+                      }}
+                      placeholder="Enter mobile number"
+                      required
+                      maxLength="10"
+                    />
+                  </div>
+
+                  {/* 6. Get Geo Location Button */}
+                  <div className={styles.formGroup}>
+                    
+                    <button 
+                      type="button"
+                      className={styles.locationBtn}
+                      onClick={() => getCurrentLocation('start')}
+                      disabled={loading}
+                    >
+                      📍 Get Current Location
+                    </button>
+                    
+                    <div className={styles.coordinatesDisplay}>
+                      <div className={styles.coordinateField}>
+                        <span className={styles.coordinateLabel}>Address:</span>
+                        <textarea 
+                          value={startForm.start_address}
+                          readOnly
+                          className={styles.addressInput}
+                          placeholder="Address will appear here after getting location"
+                          rows="3"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Form Actions */}
+                  <div className={styles.formActions}>
+                    <button 
+                      type="submit"
+                      className={styles.submitBtn}
+                      disabled={loading || !startForm.start_lat || !startForm.start_lng || startForm.driver_contact.length !== 10 || !startForm.vehicle_id}
+                    >
+                      {loading ? 'Starting...' : 'Start Trip'}
+                    </button>
+                  
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* End Trip Popup */}
+          {showEndPopup && activeTrip && (
+            <div className={styles.popupOverlay}>
+              <div className={styles.popup}>
+                <div className={styles.popupHeader}>
+                  <h3>End Trip</h3>
                   <button 
-                    type="button"
-                    className={styles.cancelBtn}
+                    className={styles.closeBtn}
                     onClick={() => setShowEndPopup(false)}
                   >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit"
-                    className={styles.submitBtn}
-                    disabled={loading || !endForm.end_lat || !endForm.end_lng}
-                  >
-                    {loading ? 'Ending...' : 'End Trip'}
+                    ✕
                   </button>
                 </div>
-              </form>
+
+                <div className={styles.TripInfo}>
+                  <p><strong>Driver:</strong> {activeTrip.driver_name}</p>
+                  <p><strong>Contact:</strong> {activeTrip.driver_contact}</p>
+                  <p><strong>Vehicle:</strong> {activeTrip.vehicle_number}</p>
+                  <p><strong>Agency:</strong> {agencies.find(a => a.id === activeTrip.agency_id)?.name}</p>
+                  <p><strong>Plant:</strong> {activeTrip.plant}</p>
+                  <p><strong>Start Time:</strong> {new Date(activeTrip.start_time).toLocaleString()}</p>
+                </div>
+                
+                <form onSubmit={handleEndTrip} className={styles.form}>
+                  <div className={styles.formGroup}>
+                    <label>End Location</label>
+                    <div className={styles.coordinatesDisplay}>
+                      <div className={styles.coordinateField}>
+                        <span className={styles.coordinateLabel}>Address:</span>
+                        <textarea 
+                          value={endForm.end_address}
+                          readOnly
+                          className={styles.addressInput}
+                          placeholder="Address will appear here after getting location"
+                          rows="3"
+                        />
+                      </div>
+                    </div>
+                    <button 
+                      type="button"
+                      className={styles.locationBtn}
+                      onClick={() => getCurrentLocation('end')}
+                      disabled={loading}
+                    >
+                      📍 Get Current Location
+                    </button>
+                  </div>
+
+                  <div className={styles.formActions}>
+                    <button 
+                      type="button"
+                      className={styles.cancelBtn}
+                      onClick={() => setShowEndPopup(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit"
+                      className={styles.submitBtn}
+                      disabled={loading || !endForm.end_lat || !endForm.end_lng}
+                    >
+                      {loading ? 'Ending...' : 'End Trip'}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
