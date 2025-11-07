@@ -367,3 +367,9 @@
     text-align: center;
   }
 }
+.helperText {
+  color: #666;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  display: block;
+}
