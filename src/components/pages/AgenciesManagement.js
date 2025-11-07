@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import AdminHeader from '../common/AdminHeader';
 import styles from './AgenciesManagement.module.css';
+import AdminNavigation from '../AdminNavigation';
 
 const AgenciesManagement = () => {
   const [agencies, setAgencies] = useState([]);
@@ -165,6 +165,8 @@ const AgenciesManagement = () => {
   };
 
   return (
+    <div className={styles.adminContainer}>
+    <AdminNavigation />
     <div className={styles.agenciesManagement}>
       {/* Header with Tabs */}
       <div className={styles.header}>
@@ -493,6 +495,7 @@ const AgenciesManagement = () => {
         )}
       </div>
     </div>
+     </div>
   );
 };
 
