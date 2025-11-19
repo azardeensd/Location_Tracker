@@ -1,15 +1,16 @@
 .header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0311a9 0%, #0311a9 100%);
   color: white;
   padding: 1rem 0;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
   z-index: 1000;
+ 
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 11000px;
   margin: 0 auto;
   padding: 0 1rem;
   display: flex;
@@ -30,7 +31,6 @@
   margin: 0;
   background: linear-gradient(45deg, #fff, #e0e7ff);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
@@ -47,7 +47,7 @@
   padding: 0.75rem 1.5rem;
   border-radius: 15px;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(74, 3, 3, 0.2);
 }
 
 .date {
@@ -90,7 +90,7 @@
 
 @media (max-width: 480px) {
   .header {
-    padding: 0.75rem 0;
+    padding: 0.44rem;
   }
 
   .title {

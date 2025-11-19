@@ -1,0 +1,364 @@
+.vehiclesManagement {
+  padding: 20px;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.editButton {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.3s;
+  min-width: 60px;
+}
+
+.editButton:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.statusButton {
+  background: #f39c12;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.3s;
+  min-width: 80px;
+}
+
+.statusButton:hover:not(:disabled) {
+  background: #e67e22;
+}
+
+.activateButton {
+  background: #27ae60;
+}
+
+.activateButton:hover:not(:disabled) {
+  background: #219a52;
+}
+
+.deactivateButton {
+  background: #e74c3c;
+}
+
+.deactivateButton:hover:not(:disabled) {
+  background: #c0392b;
+}
+
+.deleteButton {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.3s;
+  min-width: 60px;
+}
+
+.deleteButton:hover:not(:disabled) {
+  background: #c82333;
+}
+
+.editButton:disabled,
+.statusButton:disabled,
+.deleteButton:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Responsive design for action buttons */
+@media (max-width: 768px) {
+  .actionButtons {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .editButton,
+  .statusButton,
+  .deleteButton {
+    min-width: auto;
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.title {
+  color: #2c3e50;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.addButton {
+  background: linear-gradient(135deg, #1a237e 0%, #303f9f 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background 0.3s;
+}
+
+.addButton:hover {
+  background: #2980b9;
+}
+
+.errorMessage {
+  background: #fee;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+  padding: 12px;
+  font-size: 9px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.successMessage {
+  background: #efe;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.formOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.formCard {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.formCard h2 {
+  margin-bottom: 20px;
+  color: #2c3e50;
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.input, .select {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e1e8ed;
+  border-radius: 6px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+}
+
+.input:focus, .select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.formActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 25px;
+}
+
+.submitButton {
+  background: #27ae60;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  flex: 1;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: #219a52;
+}
+
+.submitButton:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  background: #95a5a6;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  flex: 1;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: #7f8c8d;
+}
+
+.vehiclesList {
+  margin-top: 30px;
+}
+
+.loading, .noData {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+  font-size: 18px;
+}
+
+.tableContainer {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  background: #c68802f3;
+  color: white;
+  padding: 15px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.table td {
+  padding: 15px;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.table tr:hover {
+  background: #f8f9fa;
+}
+
+.status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status.active {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status.inactive {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* Search Section */
+.searchBox {
+    position: absolute;
+    left: 75%;
+    top: 70px;
+    transform:  translate(-50%,50%);
+    background: #efeded;
+    height: 40px;
+    border-radius: 40px;
+    padding: 10px;
+
+}
+
+.searchBox:hover > .searchInput {
+    width: 240px;
+    padding: 0 6px;
+}
+
+.searchBox:hover > .searchButton {
+  background: white;
+  color : #0f4a9c;
+}
+
+.searchButton {
+    color: white;
+    float: right;
+    width: 50px;
+    height: 40px;
+    border-radius: 50%;
+    background: #0401ba;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: 0.4s;
+}
+
+.searchInput {
+    border:none;
+    background: none;
+    outline:none;
+    float:left;
+    padding: 0;
+    color: rgb(0, 0, 0);
+    font-size: 16px;
+    font-weight: 400;
+    transition: 0.4s;
+    line-height: 40px;
+    width: 0px;
+
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .headerActions {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+  
+    
+  .headerLeft {
+    width: 100%;
+  }
+}

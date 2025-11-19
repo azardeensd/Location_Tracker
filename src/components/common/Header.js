@@ -34,8 +34,7 @@ const Header = () => {
     <header className={styles.header}>
       <div className={styles.container}>
         <div className={styles.logo}>
-          <h1 className={styles.title}>🚗 Journey Tracker</h1>
-          <p className={styles.subtitle}>Monitor Your Trips Efficiently</p>
+          <h1 className={styles.title}>🚛 Market Vehicle Tracker</h1>
         </div>
         <div className={styles.datetime}>
           <div className={styles.date}>{formatDate(currentTime)}</div>
