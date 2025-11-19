@@ -86,8 +86,7 @@ const AdminLogin = () => {
       <div className={styles.adminLoginContainer}>
         <div className={styles.adminLoginCard}>
           <div className={styles.logoSection}>
-            <h1 className={styles.logo}>🔐 Admin Portal</h1>
-            <p className={styles.subtitle}>User Management System</p>
+            <h1 className={styles.logo}>🔐 Market Vehicle Admin Console</h1>
           </div>
 
           <form onSubmit={handleSubmit} className={styles.loginForm}>
@@ -99,7 +98,7 @@ const AdminLogin = () => {
 
             <div className={styles.formGroup}>
               <label htmlFor="username" className={styles.label}>
-                Admin Username
+                Username
               </label>
               <input
                 type="text"
@@ -108,7 +107,7 @@ const AdminLogin = () => {
                 value={formData.username}
                 onChange={handleChange}
                 className={styles.input}
-                placeholder="Enter admin username"
+                placeholder="Enter username"
                 required
                 disabled={loading}
               />
@@ -136,12 +135,12 @@ const AdminLogin = () => {
               className={styles.loginButton}
               disabled={loading}
             >
-              {loading ? 'Signing In...' : 'Admin Login'}
+              {loading ? 'Signing In...' : 'Login'}
             </button>
           </form>
 
           <div className={styles.footer}>
-            <p>Go to <a href="/login" className={styles.driverLink}>Driver Portal</a></p>
+            <p>🔗Go to <a href="/login" className={styles.driverLink}>Driver Portal</a></p>
           </div>
         </div>
       </div>
