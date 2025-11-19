@@ -1,5 +1,5 @@
 .header {
-  background: linear-gradient(135deg, #231da2 0%, #060251 100%);
+  background: linear-gradient(135deg, #0311a9 0%, #0311a9 100%);
   color: white;
   padding: 1rem 0;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
@@ -7,9 +7,11 @@
   top: 0;
   z-index: 1000;
  
+ 
 }
 
 .container {
+  max-width: 11000px;
   max-width: 11000px;
   margin: 0 auto;
   padding: 0 1rem;
@@ -47,6 +49,7 @@
   padding: 0.75rem 1.5rem;
   border-radius: 15px;
   backdrop-filter: blur(10px);
+  border: 1px solid rgba(74, 3, 3, 0.2);
   border: 1px solid rgba(74, 3, 3, 0.2);
 }
 
@@ -91,6 +94,7 @@
 @media (max-width: 480px) {
   .header {
     padding: 0.44rem;
+    padding: 0.44rem;
   }
 
   .title {
@@ -101,3 +105,4 @@
     padding: 0.5rem;
   }
 }
+
