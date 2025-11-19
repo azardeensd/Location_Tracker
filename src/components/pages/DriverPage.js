@@ -1,7 +1,11 @@
 // DriverPage.js - UPDATED WITH COMMON CONTAINER AND HEADER
+// DriverPage.js - UPDATED WITH COMMON CONTAINER AND HEADER
 import React, { useState, useEffect } from 'react';
 import { api, getAddressFromCoordinates, getDeviceId } from '../services/api';
+import { api, getAddressFromCoordinates, getDeviceId } from '../services/api';
 import styles from './DriverPage.module.css';
+import { sendTripEmail, initEmailJS } from '../services/email';
+import Header from '../common/Header';
 import { sendTripEmail, initEmailJS } from '../services/email';
 import Header from '../common/Header';
 
@@ -10,10 +14,16 @@ const DriverPage = () => {
   const [filteredAgencies, setFilteredAgencies] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [plants, setPlants] = useState([]);
+  const [filteredAgencies, setFilteredAgencies] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
+  const [plants, setPlants] = useState([]);
   const [showStartPopup, setShowStartPopup] = useState(false);
   const [showEndPopup, setShowEndPopup] = useState(false);
   const [activeTrip, setActiveTrip] = useState(null);
+  const [activeTrip, setActiveTrip] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [userData, setUserData] = useState(null);
+  const [deviceId, setDeviceId] = useState(null);
   const [userData, setUserData] = useState(null);
   const [deviceId, setDeviceId] = useState(null);
 
@@ -35,9 +45,12 @@ const [startForm, setStartForm] = useState({
     end_lat: '',
     end_lng: '',
     end_address: ''
+    end_lng: '',
+    end_address: ''
   });
 
   useEffect(() => {
+    initializeApp();
     initializeApp();
   }, []);
 
@@ -179,12 +192,21 @@ const [startForm, setStartForm] = useState({
       }
     } catch (error) {
       console.error('Error loading agencies and plants:', error);
+      console.error('Error loading agencies and plants:', error);
     }
   };
 
   // UPDATED: Load only active vehicles
   const loadVehicles = async (agencyId) => {
+  // UPDATED: Load only active vehicles
+  const loadVehicles = async (agencyId) => {
     try {
+      if (!agencyId) {
+        setVehicles([]);
+        return;
+      }
+      
+      const { data, error } = await api.getVehiclesByAgency(agencyId);
       if (!agencyId) {
         setVehicles([]);
         return;
@@ -198,13 +220,23 @@ const [startForm, setStartForm] = useState({
         setVehicles(activeVehicles);
       } else {
         setVehicles([]);
+        // Filter only active vehicles
+        const activeVehicles = data.filter(vehicle => vehicle.status === 'active');
+        console.log(`📊 Vehicles loaded: ${data.length} total, ${activeVehicles.length} active`);
+        setVehicles(activeVehicles);
+      } else {
+        setVehicles([]);
       }
     } catch (error) {
+      console.error('Error loading vehicles:', error);
+      setVehicles([]);
       console.error('Error loading vehicles:', error);
       setVehicles([]);
     }
   };
 
+  // Enhanced getCurrentLocation from old version with better error handling
+  const getCurrentLocation = async (type) => {
   // Enhanced getCurrentLocation from old version with better error handling
   const getCurrentLocation = async (type) => {
     setLoading(true);
@@ -372,12 +404,15 @@ const [startForm, setStartForm] = useState({
 };
 
   const handleEndTrip = async (e) => {
+  const handleEndTrip = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       const endTime = new Date().toISOString();
       const distance = calculateDistance(
+        activeTrip.start_lat,
+        activeTrip.start_lng,
         activeTrip.start_lat,
         activeTrip.start_lng,
         parseFloat(endForm.end_lat),
@@ -388,18 +423,24 @@ const [startForm, setStartForm] = useState({
         end_lat: parseFloat(endForm.end_lat),
         end_lng: parseFloat(endForm.end_lng),
         end_address: endForm.end_address,
+        end_address: endForm.end_address,
         end_time: endTime,
         distance_km: parseFloat(distance),
         status: 'completed'
       };
 
       const { data, error } = await api.endTrip(activeTrip.id, endData);
+      const { data, error } = await api.endTrip(activeTrip.id, endData);
       
       if (!error && data) {
         const emailResult = await sendCompletionEmail(data, distance, endTime);
         
         setActiveTrip(null);
+        const emailResult = await sendCompletionEmail(data, distance, endTime);
+        
+        setActiveTrip(null);
         setShowEndPopup(false);
+        setEndForm({ end_lat: '', end_lng: '', end_address: '' });
         setEndForm({ end_lat: '', end_lng: '', end_address: '' });
         
         if (emailResult.success) {
@@ -412,8 +453,73 @@ const [startForm, setStartForm] = useState({
       }
     } catch (error) {
       alert('Error ending trip: ' + error.message);
+      alert('Error ending trip: ' + error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sendCompletionEmail = async (tripData, distance, endTime) => {
+    try {
+      const agency = agencies.find(a => a.id === tripData.agency_id);
+      
+      if (!agency) {
+        return { success: false, message: 'Agency not found' };
+      }
+
+      if (!agency.email) {
+        return { success: false, message: 'Agency email not available' };
+      }
+
+      // Calculate duration
+      const startTime = new Date(tripData.start_time);
+      const endTimeDate = new Date(endTime);
+      const durationMs = endTimeDate - startTime;
+      const hours = Math.floor(durationMs / (1000 * 60 * 60));
+      const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+      const duration = `${hours}h ${minutes}m`;
+
+      // Format dates
+      const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB') + ' ' + date.toLocaleTimeString('en-GB', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+      };
+
+      const emailData = {
+        agency_email: agency.email,
+        subject: `MANUAL TRIP-MARKET VEHICLE-${tripData.vehicle_number || 'N/A'}`,
+        agency_name: agency.name,
+        plant: tripData.plant,
+        vehicle_number: tripData.vehicle_number || 'N/A',
+        driver_name: tripData.driver_name,
+        driver_contact: tripData.driver_contact,
+        start_time: formatDate(tripData.start_time),
+        end_time: formatDate(endTime),
+        start_lat: tripData.start_lat,
+        start_lng: tripData.start_lng,
+        end_lat: tripData.end_lat,
+        end_lng: tripData.end_lng,
+        start_address: tripData.start_address,
+        end_address: tripData.end_address,
+        distance: distance,
+        duration: duration,
+        trip_id: tripData.id.toString(),
+        current_date: new Date().toLocaleDateString('en-GB')
+      };
+
+      console.log('Sending email with data:', emailData);
+      const result = await sendTripEmail(emailData);
+      return result;
+
+    } catch (error) {
+      console.error('Error in sendCompletionEmail:', error);
+      return { 
+        success: false, 
+        message: error.message 
+      };
     }
   };
 
@@ -535,6 +641,59 @@ const [startForm, setStartForm] = useState({
               </p>
             )}
           </div>
+    <div className={styles.pageWrapper}>
+      <Header />
+      <div className={styles.driverPage}>
+        <div className={styles.container}>
+          {/* Device info for debugging */}
+          {process.env.NODE_ENV === 'development' && deviceId && (
+            <div style={{ padding: '5px', marginBottom: '10px', borderRadius: '5px', fontSize: '12px' }}>
+              {/* <strong>Device ID:</strong> {deviceId} */}
+            </div>
+          )}
+          
+          <div className={styles.statusCard}>
+            <h2 className={styles.statusTitle}>
+              {activeTrip ? '🚗 Trip in Progress' : '✅ Ready to Start'}
+            </h2>
+            
+            {activeTrip ? (
+              <div className={styles.activeTripDetails}>
+                <div className={styles.statusLine}>
+                  <span className={styles.label}>Plant :</span>
+                  <span className={styles.value}>{activeTrip.plant}</span>
+                </div>
+                <div className={styles.statusLine}>
+                  <span className={styles.label}>Transporter :</span>
+                  <span className={styles.value}>
+                    {agencies.find(a => a.id === activeTrip.agency_id)?.name}
+                  </span>
+                </div>
+                <div className={styles.statusLine}>
+                  <span className={styles.label}>Vehicle No :</span>
+                  <span className={styles.value}>{activeTrip.vehicle_number}</span>
+                </div>
+                <div className={styles.statusLine}>
+                  <span className={styles.label}>Driver :</span>
+                  <span className={styles.value}>{activeTrip.driver_name}</span>
+                </div>
+                <div className={styles.statusLine}>
+                  <span className={styles.label}>Start Date & Time :</span>
+                  <span className={styles.value}>
+                    {new Date(activeTrip.start_time).toLocaleString()}
+                  </span>
+                </div>
+                <div className={styles.statusLine}>
+                  <span className={styles.label}>Start Location :</span>
+                  <span className={styles.value}>{activeTrip.start_address}</span>
+                </div>
+              </div>
+            ) : (
+              <p className={styles.statusText}>
+                {/* Empty state text if needed */}
+              </p>
+            )}
+          </div>
 
           <div className={styles.controls}>
             {!activeTrip ? (
@@ -555,7 +714,89 @@ const [startForm, setStartForm] = useState({
               </button>
             )}
           </div>
+          <div className={styles.controls}>
+            {!activeTrip ? (
+              <button 
+                className={`${styles.btn} ${styles.startBtn}`}
+                onClick={() => setShowStartPopup(true)}
+                disabled={loading}
+              >
+                🚗 Start Trip
+              </button>
+            ) : (
+              <button 
+                className={`${styles.btn} ${styles.endBtn}`}
+                onClick={() => setShowEndPopup(true)}
+                disabled={loading}
+              >
+                🏁 End Trip
+              </button>
+            )}
+          </div>
 
+          {/* Start Trip Popup */}
+          {showStartPopup && (
+            <div className={styles.popupOverlay}>
+              <div className={styles.popup}>
+                <div className={styles.popupHeader}>
+                  <h3>Start New Trip</h3>
+                  <button 
+                    className={styles.closeBtn}
+                    onClick={() => {
+                      setShowStartPopup(false);
+                      setVehicles([]);
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                
+                <form onSubmit={handleStartTrip} className={styles.form}>
+                  {/* 1. Plant - Auto-filled and read-only */}
+                  <div className={styles.formGroup}>
+                    
+                    <input 
+                      type="text"
+                      value={startForm.plant}
+                      readOnly
+                      className={styles.readonlyInput}
+                      placeholder="Plant will be auto-filled"
+                    />
+                  </div>
+
+                  {/* 2. Transporter (Agency) - Auto-filled and read-only */}
+                  <div className={styles.formGroup}>
+                    
+                    <input 
+                      type="text"
+                      value={filteredAgencies.find(a => a.id === parseInt(startForm.agency_id))?.name || ''}
+                      readOnly
+                      className={styles.readonlyInput}
+                      placeholder="Transporter will be auto-filled"
+                    />
+                  </div>
+
+                  {/* 3. Vehicle Number - User selects from their agency's ACTIVE vehicles */}
+                  <div className={styles.formGroup}>
+                    
+                    <select 
+                      value={startForm.vehicle_id}
+                      onChange={(e) => setStartForm(prev => ({...prev, vehicle_id: e.target.value}))}
+                      required
+                      disabled={!startForm.agency_id || vehicles.length === 0}
+                    >
+                      <option value="">Select Vehicle</option>
+                      {vehicles.map(vehicle => (
+                        <option key={vehicle.id} value={vehicle.id}>
+                          {vehicle.vehicle_number} {vehicle.status === 'inactive' ? '(Inactive)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    {startForm.agency_id && vehicles.length === 0 && (
+                      <p className={styles.noData}>No active vehicles found for your agency</p>
+                    )}
+                    
+                  </div>
           {/* Start Trip Popup */}
           {showStartPopup && (
             <div className={styles.popupOverlay}>
@@ -690,6 +931,47 @@ const [startForm, setStartForm] = useState({
                     </div>
                   </div>
 
+                  {/* 6. Get Geo Location Button */}
+                  <div className={styles.formGroup}>
+                    
+                    <button 
+                      type="button"
+                      className={styles.locationBtn}
+                      onClick={() => getCurrentLocation('start')}
+                      disabled={loading}
+                    >
+                      📍 Get Current Location
+                    </button>
+                    
+                    <div className={styles.coordinatesDisplay}>
+                      <div className={styles.coordinateField}>
+                        <span className={styles.coordinateLabel}>Address:</span>
+                        <textarea 
+                          value={startForm.start_address}
+                          readOnly
+                          className={styles.addressInput}
+                          placeholder="Address will appear here after getting location"
+                          rows="3"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Form Actions */}
+                  <div className={styles.formActions}>
+                    <button 
+                      type="submit"
+                      className={styles.submitBtn}
+                      disabled={loading || !startForm.start_lat || !startForm.start_lng || startForm.driver_contact.length !== 10 || !startForm.vehicle_id}
+                    >
+                      {loading ? 'Starting...' : 'Start Trip'}
+                    </button>
+                  
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
                   {/* Form Actions */}
                   <div className={styles.formActions}>
                     <button 
@@ -706,6 +988,19 @@ const [startForm, setStartForm] = useState({
             </div>
           )}
 
+          {/* End Trip Popup */}
+          {showEndPopup && activeTrip && (
+            <div className={styles.popupOverlay}>
+              <div className={styles.popup}>
+                <div className={styles.popupHeader}>
+                  <h3>End Trip</h3>
+                  <button 
+                    className={styles.closeBtn}
+                    onClick={() => setShowEndPopup(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
           {/* End Trip Popup */}
           {showEndPopup && activeTrip && (
             <div className={styles.popupOverlay}>
@@ -753,7 +1048,61 @@ const [startForm, setStartForm] = useState({
                       📍 Get Current Location
                     </button>
                   </div>
+                <div className={styles.TripInfo}>
+                  <p><strong>Driver:</strong> {activeTrip.driver_name}</p>
+                  <p><strong>Contact:</strong> {activeTrip.driver_contact}</p>
+                  <p><strong>Vehicle:</strong> {activeTrip.vehicle_number}</p>
+                  <p><strong>Agency:</strong> {agencies.find(a => a.id === activeTrip.agency_id)?.name}</p>
+                  <p><strong>Plant:</strong> {activeTrip.plant}</p>
+                  <p><strong>Start Time:</strong> {new Date(activeTrip.start_time).toLocaleString()}</p>
+                </div>
+                
+                <form onSubmit={handleEndTrip} className={styles.form}>
+                  <div className={styles.formGroup}>
+                    <label>End Location</label>
+                    <div className={styles.coordinatesDisplay}>
+                      <div className={styles.coordinateField}>
+                        <span className={styles.coordinateLabel}>Address:</span>
+                        <textarea 
+                          value={endForm.end_address}
+                          readOnly
+                          className={styles.addressInput}
+                          placeholder="Address will appear here after getting location"
+                          rows="3"
+                        />
+                      </div>
+                    </div>
+                    <button 
+                      type="button"
+                      className={styles.locationBtn}
+                      onClick={() => getCurrentLocation('end')}
+                      disabled={loading}
+                    >
+                      📍 Get Current Location
+                    </button>
+                  </div>
 
+                  <div className={styles.formActions}>
+                    <button 
+                      type="button"
+                      className={styles.cancelBtn}
+                      onClick={() => setShowEndPopup(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit"
+                      className={styles.submitBtn}
+                      disabled={loading || !endForm.end_lat || !endForm.end_lng}
+                    >
+                      {loading ? 'Ending...' : 'End Trip'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
                   <div className={styles.formActions}>
                     <button 
                       type="button"
