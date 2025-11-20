@@ -501,229 +501,227 @@ const Dashboard = () => {
   const isAdmin = currentUser.role === 'admin';
 
   return (
-  <div className={styles.adminContainer}>
-    <AdminNavigation />
-    <div className={styles.dashboard}>
-      {/* Header */}
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <h1 className={styles.title}>Trips Dashboard</h1>
-          <p className={styles.subtitle}>
-            {isAdmin ? 'Overview of all trips across all plants' : ``}
-          </p>
-        </div>
-        <div className={styles.headerActions}>
-          <button 
-            className={styles.refreshButton}
-            onClick={fetchTrips}
-            disabled={loading}
-          >
-            🔄 {loading ? 'Loading...' : 'Refresh'}
-          </button>
-          <button 
-            className={styles.printButton}
-            onClick={handlePrint}
-            disabled={filteredTrips.length === 0}
-          >
-            🖨️ Print
-          </button>
-          <button 
-            className={styles.exportButton}
-            onClick={handleExportCSV}
-            disabled={filteredTrips.length === 0}
-          >
-            📥 Export CSV
-          </button>
-        </div>
-      </div>
-
-      {error && (
-        <div className={styles.errorMessage}>
-          ⚠️ {error}
-          <button onClick={() => setError('')} className={styles.dismissError}>×</button>
-        </div>
-      )}
-
-      {/* Statistics Cards - MOVED ABOVE FILTER */}
-      <div className={styles.statsGrid}>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>📊</div>
-          <div className={styles.statInfo}>
-            <h3 className={styles.statNumber}>{stats.totalTrips}</h3>
-            <p className={styles.statLabel}>Total Trips</p>
-          </div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>✅</div>
-          <div className={styles.statInfo}>
-            <h3 className={styles.statNumber}>{stats.completedTrips}</h3>
-            <p className={styles.statLabel}>Completed</p>
-          </div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>🔄</div>
-          <div className={styles.statInfo}>
-            <h3 className={styles.statNumber}>{stats.inProgressTrips}</h3>
-            <p className={styles.statLabel}>In Progress</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Date Filter Section - MOVED BELOW STATS CARDS */}
-      <div className={styles.filterSection}>
-        <div className={styles.filterHeader}>
-          {filterActive && (
-            <span className={styles.activeFilterBadge}>
-              Filter Active
-            </span>
-          )}
-        </div>
-        <div className={styles.dateFilters}>
-          <div className={styles.dateInputGroup}>
-            <label>From Date:</label>
-            <input
-              type="date"
-              value={dateFilter.startDate}
-              onChange={(e) => setDateFilter(prev => ({
-                ...prev,
-                startDate: e.target.value
-              }))}
-              className={styles.dateInput}
-            />
-          </div>
-          <div className={styles.dateInputGroup}>
-            <label>To Date:</label>
-            <input
-              type="date"
-              value={dateFilter.endDate}
-              onChange={(e) => setDateFilter(prev => ({
-                ...prev,
-                endDate: e.target.value
-              }))}
-              className={styles.dateInput}
-            />
-          </div>
-          <div className={styles.filterActions}>
-            <button
-              className={styles.applyFilterButton}
-              onClick={applyDateFilter}
-              disabled={loading}
-            >
-              🔍 Apply Filter
-            </button>
-            <button
-              className={styles.clearFilterButton}
-              onClick={clearDateFilter}
-              disabled={!filterActive}
-            >
-              🗑️ Clear
-            </button>
-          </div>
-        </div>
-        {filterActive && (
-          <div className={styles.filterInfo}>
-            <p>
-              Showing trips from <strong>{dateFilter.startDate || 'Any'}</strong> to <strong>{dateFilter.endDate || 'Any'}</strong>
-              {' '}({filteredTrips.length} of {trips.length} total trips)
+    <div className={styles.adminContainer}>
+      <AdminNavigation />
+      <div className={styles.dashboard}>
+        {/* Header */}
+        <div className={styles.header}>
+          <div className={styles.headerLeft}>
+            <h1 className={styles.title}>Trips Dashboard</h1>
+            <p className={styles.subtitle}>
+              {isAdmin ? '' : ``}
             </p>
           </div>
-        )}
-      </div>
-
-      {/* Recent Trips Table */}
-      <div className={styles.recentTrips}>
-        <div className={styles.sectionHeader}>
-          <h2>Recent Trips</h2>
-          <span className={styles.tripCount}>
-            Showing {filteredTrips.length} trips
-            {filterActive && ` (filtered from ${trips.length} total)`}
-          </span>
+          <div className={styles.headerActions}>
+            <button 
+              className={styles.refreshButton}
+              onClick={fetchTrips}
+              disabled={loading}
+            >
+              🔄 {loading ? 'Loading...' : 'Refresh'}
+            </button>
+            <button 
+              className={styles.printButton}
+              onClick={handlePrint}
+              disabled={filteredTrips.length === 0}
+            >
+              🖨️ Print
+            </button>
+            <button 
+              className={styles.exportButton}
+              onClick={handleExportCSV}
+              disabled={filteredTrips.length === 0}
+            >
+              📥 Export CSV
+            </button>
+          </div>
         </div>
 
-        {loading ? (
-          <div className={styles.loading}>Loading trips...</div>
-        ) : filteredTrips.length === 0 ? (
-          <div className={styles.noData}>
-            <p>No trips found</p>
-            {filterActive ? (
-              <p className={styles.helperText}>
-                No trips match your date filter. Try adjusting the date range or{' '}
-                <button 
-                  onClick={clearDateFilter}
-                  className={styles.clearFilterLink}
-                >
-                  clear the filter
-                </button>
-              </p>
-            ) : (
-              isAdmin && (
-                <p className={styles.helperText}>
-                  Trips will appear here once they are created
-                </p>
-              )
-            )}
-          </div>
-        ) : (
-          <div className={styles.tableContainer} ref={tableRef}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Trip ID</th>
-                  <th>Plant</th>
-                  <th>Vehicle</th>
-                  <th>Transporter</th>
-                  <th>Driver</th>
-                  <th>Start Location</th>
-                  <th>End Location</th>
-                  <th>Start Date</th>
-                  <th>Start Time</th>
-                  <th>End Date</th>
-                  <th>End Time</th>
-                  <th>Distance</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTrips.map((trip) => (
-                  <tr key={trip.id}>
-                    <td className={styles.tripId}>
-                      {formatTripId(trip.id)}
-                    </td>
-                    { (
-                      <td>
-                        {trip.plant?.name || trip.plant_name || trip.plant || 'N/A'}
-                      </td>
-                    )}
-                    
-                    <td>
-                      {trip.vehicle?.vehicle_number || trip.vehicle_number || 'N/A'}
-                    </td>
-                    <td>{getTransporterName(trip)}</td>
-                    <td>{trip.driver_name || 'N/A'}</td>
-                    <td className={styles.locationCell}>{getStartLocation(trip)}</td>
-                    <td className={styles.locationCell}>{getEndLocation(trip)}</td>
-                    <td>{formatDate(trip.Start_Date)}</td>
-                    <td>{formatTime(trip.start_time)}</td>
-                    <td>{formatDate(trip.End_Date)}</td>
-                    <td>{formatTime(trip.end_time)}</td>
-                    <td className={styles.distanceCell}>{getDistance(trip)}</td>
-                    <td>
-                      <span className={`${styles.statusBadge} ${getStatusClass(trip.status)}`}>
-                        {getDisplayStatus(trip.status)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {error && (
+          <div className={styles.errorMessage}>
+            ⚠️ {error}
+            <button onClick={() => setError('')} className={styles.dismissError}>×</button>
           </div>
         )}
+
+        {/* Stats and Filter Row */}
+        <div className={styles.statsFilterRow}>
+          {/* Stats Cards - Left Side */}
+          <div className={styles.statsContainer}>
+            <div className={styles.statsGrid}>
+              <div className={styles.statCard}>
+                <div className={styles.statIcon}>📊</div>
+                <div className={styles.statInfo}>
+                  <h3 className={styles.statNumber}>{stats.totalTrips}</h3>
+                  <p className={styles.statLabel}>Total Trips</p>
+                </div>
+              </div>
+
+              <div className={styles.statCard}>
+                <div className={styles.statIcon}>✅</div>
+                <div className={styles.statInfo}>
+                  <h3 className={styles.statNumber}>{stats.completedTrips}</h3>
+                  <p className={styles.statLabel}>Completed</p>
+                </div>
+              </div>
+
+              <div className={styles.statCard}>
+                <div className={styles.statIcon}>🔄</div>
+                <div className={styles.statInfo}>
+                  <h3 className={styles.statNumber}>{stats.inProgressTrips}</h3>
+                  <p className={styles.statLabel}>In Progress</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Date Filter - Right Side */}
+          <div className={styles.filterContainer}>
+            <div className={styles.dateFilters}>
+              <div className={styles.dateInputGroup}>
+                <label>From Date:</label>
+                <input
+                  type="date"
+                  value={dateFilter.startDate}
+                  onChange={(e) => setDateFilter(prev => ({
+                    ...prev,
+                    startDate: e.target.value
+                  }))}
+                  className={styles.dateInput}
+                />
+              </div>
+              <div className={styles.dateInputGroup}>
+                <label>To Date:</label>
+                <input
+                  type="date"
+                  value={dateFilter.endDate}
+                  onChange={(e) => setDateFilter(prev => ({
+                    ...prev,
+                    endDate: e.target.value
+                  }))}
+                  className={styles.dateInput}
+                />
+              </div>
+              <div className={styles.filterActions}>
+                <button
+                  className={styles.applyFilterButton}
+                  onClick={applyDateFilter}
+                  disabled={loading}
+                >
+                  🔍 Apply Filter
+                </button>
+                <button
+                  className={styles.clearFilterButton}
+                  onClick={clearDateFilter}
+                  disabled={!filterActive}
+                >
+                  🗑️ Clear
+                </button>
+              </div>
+            </div>
+            {filterActive && (
+              <div className={styles.filterInfo}>
+                <p>
+                  Showing trips from <strong>{dateFilter.startDate || 'Any'}</strong> to <strong>{dateFilter.endDate || 'Any'}</strong>
+                  {' '}({filteredTrips.length} of {trips.length} total trips)
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Trips Table */}
+        <div className={styles.recentTrips}>
+          <div className={styles.sectionHeader}>
+            <h2>Recent Trips</h2>
+            <span className={styles.tripCount}>
+              Showing {filteredTrips.length} trips
+              {filterActive && ` (filtered from ${trips.length} total)`}
+            </span>
+          </div>
+
+          {loading ? (
+            <div className={styles.loading}>Loading trips...</div>
+          ) : filteredTrips.length === 0 ? (
+            <div className={styles.noData}>
+              <p>No trips found</p>
+              {filterActive ? (
+                <p className={styles.helperText}>
+                  No trips match your date filter. Try adjusting the date range or{' '}
+                  <button 
+                    onClick={clearDateFilter}
+                    className={styles.clearFilterLink}
+                  >
+                    clear the filter
+                  </button>
+                </p>
+              ) : (
+                isAdmin && (
+                  <p className={styles.helperText}>
+                    Trips will appear here once they are created
+                  </p>
+                )
+              )}
+            </div>
+          ) : (
+            <div className={styles.tableContainer} ref={tableRef}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Trip ID</th>
+                    <th>Plant</th>
+                    <th>Vehicle</th>
+                    <th>Transporter</th>
+                    <th>Driver</th>
+                    <th>Start Location</th>
+                    <th>End Location</th>
+                    <th>Start Date</th>
+                    <th>Start Time</th>
+                    <th>End Date</th>
+                    <th>End Time</th>
+                    <th>Distance</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTrips.map((trip) => (
+                    <tr key={trip.id}>
+                      <td className={styles.tripId}>
+                        {formatTripId(trip.id)}
+                      </td>
+                      { (
+                        <td>
+                          {trip.plant?.name || trip.plant_name || trip.plant || 'N/A'}
+                        </td>
+                      )}
+                      
+                      <td>
+                        {trip.vehicle?.vehicle_number || trip.vehicle_number || 'N/A'}
+                      </td>
+                      <td>{getTransporterName(trip)}</td>
+                      <td>{trip.driver_name || 'N/A'}</td>
+                      <td className={styles.locationCell}>{getStartLocation(trip)}</td>
+                      <td className={styles.locationCell}>{getEndLocation(trip)}</td>
+                      <td>{formatDate(trip.Start_Date)}</td>
+                      <td>{formatTime(trip.start_time)}</td>
+                      <td>{formatDate(trip.End_Date)}</td>
+                      <td>{formatTime(trip.end_time)}</td>
+                      <td className={styles.distanceCell}>{getDistance(trip)}</td>
+                      <td>
+                        <span className={`${styles.statusBadge} ${getStatusClass(trip.status)}`}>
+                          {getDisplayStatus(trip.status)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 };
 
 export default Dashboard;
