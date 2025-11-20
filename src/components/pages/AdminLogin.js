@@ -87,7 +87,6 @@ const AdminLogin = () => {
         <div className={styles.adminLoginCard}>
           <div className={styles.logoSection}>
             <h1 className={styles.logo}>🔐 Market Vehicle Admin Console</h1>
-            <h1 className={styles.logo}>🔐 Market Vehicle Admin Console</h1>
           </div>
 
           <form onSubmit={handleSubmit} className={styles.loginForm}>
@@ -100,7 +99,6 @@ const AdminLogin = () => {
             <div className={styles.formGroup}>
               <label htmlFor="username" className={styles.label}>
                 Username
-                Username
               </label>
               <input
                 type="text"
@@ -109,7 +107,6 @@ const AdminLogin = () => {
                 value={formData.username}
                 onChange={handleChange}
                 className={styles.input}
-                placeholder="Enter username"
                 placeholder="Enter username"
                 required
                 disabled={loading}
@@ -139,12 +136,10 @@ const AdminLogin = () => {
               disabled={loading}
             >
               {loading ? 'Signing In...' : 'Login'}
-              {loading ? 'Signing In...' : 'Login'}
             </button>
           </form>
 
           <div className={styles.footer}>
-            <p>🔗Go to <a href="/login" className={styles.driverLink}>Driver Portal</a></p>
             <p>🔗Go to <a href="/login" className={styles.driverLink}>Driver Portal</a></p>
           </div>
         </div>
@@ -154,3 +149,159 @@ const AdminLogin = () => {
 };
 
 export default AdminLogin;
+
+//old code//
+// import React, { useState } from 'react';
+// import { useNavigate } from 'react-router-dom';
+// import { api } from '../services/api';
+// import styles from './AdminLogin.module.css';
+
+// const AdminLogin = () => {
+//   const [formData, setFormData] = useState({
+//     username: '',
+//     password: ''
+//   });
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState('');
+//   const navigate = useNavigate();
+
+//   const handleChange = (e) => {
+//     setFormData({
+//       ...formData,
+//       [e.target.name]: e.target.value
+//     });
+//     setError('');
+//   };
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+    
+//     if (!formData.username.trim() || !formData.password.trim()) {
+//       setError('Please enter both username and password');
+//       return;
+//     }
+
+//     setLoading(true);
+//     setError('');
+
+//     try {
+//       console.log('Attempting admin login with:', formData);
+      
+//       // Use adminLogin instead of login
+//       const { data, error: apiError } = await api.adminLogin(formData);
+      
+//       console.log('API Response:', { data, apiError });
+      
+//       if (apiError) {
+//         setError(apiError.message || 'Login failed. Please try again.');
+//         return;
+//       }
+
+//       // Check if we have valid data
+//       if (data) {
+//         // Check if user is admin based on the actual API response structure
+//         const userData = data.user || data.admin || data;
+//         const token = data.token || data.access_token;
+        
+//         console.log('User data:', userData);
+//         console.log('Token:', token);
+
+//         if (userData.role === 'admin') {
+//           // Store admin session
+//           localStorage.setItem('adminToken', token);
+//           localStorage.setItem('adminData', JSON.stringify(userData));
+          
+//           // Verify storage
+//           console.log('Stored adminToken:', localStorage.getItem('adminToken'));
+//           console.log('Stored adminData:', localStorage.getItem('adminData'));
+          
+//           // Redirect to admin dashboard - use /admin/users since that's what we have routes for
+//           navigate('/admin/users');
+//         } else {
+//           setError('Access denied. Admin privileges required.');
+//           // Clear any existing admin data
+//           localStorage.removeItem('adminToken');
+//           localStorage.removeItem('adminData');
+//         }
+//       } else {
+//         setError('Invalid credentials or server error');
+//       }
+//     } catch (err) {
+//       setError('Network error. Please try again.');
+//       console.error('Admin login error:', err);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   // Remove the duplicate handleLogout function that was here incorrectly
+
+//   return (
+//     <div className={styles.adminLoginPage}>
+//       <div className={styles.adminLoginContainer}>
+//         <div className={styles.adminLoginCard}>
+//           <div className={styles.logoSection}>
+//             <h1 className={styles.logo}>🔐 Admin Portal</h1>
+//             <p className={styles.subtitle}>User Management System</p>
+//           </div>
+
+//           <form onSubmit={handleSubmit} className={styles.loginForm}>
+//             {error && (
+//               <div className={styles.errorMessage}>
+//                 ⚠️ {error}
+//               </div>
+//             )}
+
+//             <div className={styles.formGroup}>
+//               <label htmlFor="username" className={styles.label}>
+//                 Admin Username
+//               </label>
+//               <input
+//                 type="text"
+//                 id="username"
+//                 name="username"
+//                 value={formData.username}
+//                 onChange={handleChange}
+//                 className={styles.input}
+//                 placeholder="Enter admin username"
+//                 required
+//                 disabled={loading}
+//               />
+//             </div>
+
+//             <div className={styles.formGroup}>
+//               <label htmlFor="password" className={styles.label}>
+//                 Password
+//               </label>
+//               <input
+//                 type="password"
+//                 id="password"
+//                 name="password"
+//                 value={formData.password}
+//                 onChange={handleChange}
+//                 className={styles.input}
+//                 placeholder="Enter your password"
+//                 required
+//                 disabled={loading}
+//               />
+//             </div>
+
+//             <button 
+//               type="submit" 
+//               className={styles.loginButton}
+//               disabled={loading}
+//             >
+//               {loading ? 'Signing In...' : 'Admin Login'}
+//             </button>
+//           </form>
+
+//           <div className={styles.footer}>
+//             <p>Go to <a href="/login" className={styles.driverLink}>Driver Portal</a></p>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default AdminLogin;

@@ -1,0 +1,11 @@
+[33m021b59d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: pull --tags origin main: Fast-forward
+[33m7546b45[m HEAD@{1}: reset: moving to HEAD~1
+[33md4aa23f[m HEAD@{2}: reset: moving to HEAD~1
+[33m7823c0a[m HEAD@{3}: reset: moving to HEAD~1
+[33m60bbb22[m HEAD@{4}: reset: moving to HEAD~1
+[33m021b59d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{5}: commit (merge): Merge branch 'main' of https://github.com/azardeensd/Location_Tracker
+[33m60bbb22[m HEAD@{6}: commit (merge): Merge branch 'main' of https://github.com/azardeensd/Location_Tracker
+[33m7823c0a[m HEAD@{7}: commit: setup completed successfully.
+[33md4aa23f[m HEAD@{8}: Branch: renamed refs/heads/main to refs/heads/main
+[33md4aa23f[m HEAD@{10}: commit: Initial project commit
+[33m7546b45[m HEAD@{11}: clone: from https://github.com/jeyanime2005/Location_Tracker.git
