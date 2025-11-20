@@ -569,14 +569,6 @@ const Dashboard = () => {
             <p className={styles.statLabel}>In Progress</p>
           </div>
         </div>
-
-        <div className={styles.statCard}>
-          {/* <div className={styles.statIcon}>📏</div> */}
-          <div className={styles.statInfo}>
-            {/* <h3 className={styles.statNumber}>{stats.totalDistance}</h3>
-            <p className={styles.statLabel}>Total Distance (km)</p> */}
-          </div>
-        </div>
       </div>
 
       {/* Date Filter Section - MOVED BELOW STATS CARDS */}
