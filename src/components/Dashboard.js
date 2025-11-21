@@ -389,8 +389,29 @@ const Dashboard = () => {
     }
   };
 
+  // Sort trips by status: In Progress first, then Completed, then others
+  const getSortedTrips = () => {
+    return [...filteredTrips].sort((a, b) => {
+      const statusA = getDisplayStatus(a.status).toLowerCase();
+      const statusB = getDisplayStatus(b.status).toLowerCase();
+      
+      // Define priority order
+      const priority = {
+        'in progress': 1,
+        'completed': 2
+        // Other statuses will get priority 3
+      };
+      
+      const priorityA = priority[statusA] || 3;
+      const priorityB = priority[statusB] || 3;
+      
+      return priorityA - priorityB;
+    });
+  };
+
   // Print functionality
   const handlePrint = () => {
+    const sortedTrips = getSortedTrips();
     const printContent = tableRef.current.innerHTML;
     const originalContent = document.body.innerHTML;
     
@@ -440,6 +461,7 @@ const Dashboard = () => {
 
   // Export to CSV
   const handleExportCSV = () => {
+    const sortedTrips = getSortedTrips();
     const headers = [
       'Trip ID',
       'Plant',
@@ -456,7 +478,7 @@ const Dashboard = () => {
       'Status'
     ];
 
-    const csvData = filteredTrips.map(trip => [
+    const csvData = sortedTrips.map(trip => [
       trip.id || 'N/A',
       trip.plant?.name || trip.plant_name || trip.plant || 'N/A',
       trip.vehicle?.vehicle_number || trip.vehicle_number || 'N/A',
@@ -499,6 +521,7 @@ const Dashboard = () => {
 
   const userPlantName = getUserPlantName();
   const isAdmin = currentUser.role === 'admin';
+  const sortedTrips = getSortedTrips();
 
   return (
     <div className={styles.adminContainer}>
@@ -523,14 +546,14 @@ const Dashboard = () => {
             <button 
               className={styles.printButton}
               onClick={handlePrint}
-              disabled={filteredTrips.length === 0}
+              disabled={sortedTrips.length === 0}
             >
               🖨️ Print
             </button>
             <button 
               className={styles.exportButton}
               onClick={handleExportCSV}
-              disabled={filteredTrips.length === 0}
+              disabled={sortedTrips.length === 0}
             >
               📥 Export CSV
             </button>
@@ -635,14 +658,14 @@ const Dashboard = () => {
           <div className={styles.sectionHeader}>
             <h2>Recent Trips</h2>
             <span className={styles.tripCount}>
-              Showing {filteredTrips.length} trips
+              Showing {sortedTrips.length} trips
               {filterActive && ` (filtered from ${trips.length} total)`}
             </span>
           </div>
 
           {loading ? (
             <div className={styles.loading}>Loading trips...</div>
-          ) : filteredTrips.length === 0 ? (
+          ) : sortedTrips.length === 0 ? (
             <div className={styles.noData}>
               <p>No trips found</p>
               {filterActive ? (
@@ -669,7 +692,7 @@ const Dashboard = () => {
                 <thead>
                   <tr>
                     <th>Trip ID</th>
-                    <th>Plant</th>
+                    {isAdmin && <th>Plant</th>}
                     <th>Vehicle</th>
                     <th>Transporter</th>
                     <th>Driver</th>
@@ -684,17 +707,16 @@ const Dashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTrips.map((trip) => (
+                  {sortedTrips.map((trip) => (
                     <tr key={trip.id}>
                       <td className={styles.tripId}>
                         {formatTripId(trip.id)}
                       </td>
-                      { (
+                      {isAdmin && (
                         <td>
                           {trip.plant?.name || trip.plant_name || trip.plant || 'N/A'}
                         </td>
                       )}
-                      
                       <td>
                         {trip.vehicle?.vehicle_number || trip.vehicle_number || 'N/A'}
                       </td>
