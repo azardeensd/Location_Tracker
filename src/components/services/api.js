@@ -1550,4 +1550,3 @@ getTripsByPlant: async (plantId) => {
 };
 
 export default api;
-
