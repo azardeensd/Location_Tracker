@@ -784,54 +784,110 @@ getTripsByPlant: async (plantId) => {
 
   // Start trip with device ID
    startTrip: async (tripData) => {
-    try {
-      const deviceId = getDeviceId();
-      console.log('Starting trip with device ID:', deviceId);
-      console.log('Device ID:', deviceId);
-    console.log('Full tripData received:', tripData);
-    console.log('plant_id value:', tripData.plant_id);
-    console.log('plant_id type:', typeof tripData.plant_id);
-    console.log('plant_id length:', tripData.plant_id?.length);
+  try {
+    const deviceId = generateDeviceId();
+    const { data: activeTrip } = await api.checkDeviceActiveTrip(deviceId);
     
+    if (activeTrip) return { data: null, error: { message: 'You already have an active trip.' } };
+
+    const requiredFields = ['vehicle_id', 'plant_id', 'start_lat', 'start_lng', 'vendor_code'];
+    const missingFields = requiredFields.filter(field => !tripData[field]);
+    if (missingFields.length > 0) return { data: null, error: { message: `Missing fields: ${missingFields.join(', ')}` } };
+
+    // Get user data from localStorage
+    let agencyId = null;
+    let plantId = null;
+    try {
+      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
+      const user = userData.user || adminData;
       
-      // Get current date for start_date
-      const currentDate = new Date().toISOString().split('T')[0];
-      const currentTime = new Date().toISOString();
-      
-      const { data, error } = await supabase
-        .from('Trips')
-        .insert([{
-          agency_id: tripData.agency_id,
-          vehicle_id: tripData.vehicle_id,
-          vehicle_number: tripData.vehicle_number,
-          plant: tripData.plant,
-          plant_id: tripData.plant_id, // ✅ ADDED: plant_id from agency
-          driver_name: tripData.driver_name,
-          driver_contact: tripData.driver_contact,
-          start_lat: tripData.start_lat,
-          start_lng: tripData.start_lng,
-          start_address: tripData.start_address,
-          Start_Date: currentDate, // ✅ ADDED: start date
-          start_time: currentTime,
-          status: 'active',
-          device_id: deviceId,
-          created_at: currentTime
-        }])
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error starting trip:', error);
-        return { data: null, error };
+      // Check if agency_id is a valid UUID
+      if (user?.agency_id && user.agency_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        agencyId = user.agency_id;
       }
       
-      console.log('Start trip response:', { data, error });
-      return { data, error: null };
-    } catch (error) {
-      console.error('Exception starting trip:', error);
+      // Check if plant_id is a valid UUID
+      if (user?.plant_id && user.plant_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        plantId = user.plant_id;
+      }
+    } catch (e) {
+      console.warn('Could not get user data:', e);
+    }
+
+    // If we couldn't get UUIDs from user data, we need to fetch them
+    if (!plantId && tripData.plant_id) {
+      // Fetch the plant UUID using the provided plant_id (which might be a number or code)
+      const { data: plant } = await supabase
+        .from('plants')
+        .select('id')
+        .eq('id', tripData.plant_id)
+        .maybeSingle();
+      
+      if (plant) {
+        plantId = plant.id;
+      } else {
+        // Try to find by plant name or code
+        const { data: plantByName } = await supabase
+          .from('plants')
+          .select('id')
+          .eq('name', tripData.plant)
+          .maybeSingle();
+        
+        if (plantByName) {
+          plantId = plantByName.id;
+        }
+      }
+    }
+
+    if (!agencyId && tripData.agency_id) {
+      // Fetch the agency UUID
+      const { data: agency } = await supabase
+        .from('agencies')
+        .select('id')
+        .eq('id', tripData.agency_id)
+        .maybeSingle();
+      
+      if (agency) {
+        agencyId = agency.id;
+      }
+    }
+
+    const tripInsertData = {
+      agency_id: agencyId, // This will be a proper UUID or null
+      vehicle_id: parseInt(tripData.vehicle_id) || null,
+      vehicle_number: tripData.vehicle_number || null,
+      plant: tripData.plant || null,
+      plant_id: plantId, // This will be a proper UUID or null
+      driver_name: tripData.driver_name || null,
+      driver_contact: tripData.driver_contact || null,
+      start_lat: parseFloat(tripData.start_lat) || 0,
+      start_lng: parseFloat(tripData.start_lng) || 0,
+      start_address: tripData.start_address || null,
+      Start_Date: new Date().toISOString().split('T')[0],
+      start_time: new Date().toISOString(),
+      status: 'active',
+      device_id: deviceId,
+      vendor_code: tripData.vendor_code?.toString(),
+      vendor_name: tripData.vendor_name?.toString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    console.log('📤 Starting trip with data:', JSON.stringify(tripInsertData, null, 2));
+
+    const { data, error } = await supabase.from('Trips').insert([tripInsertData]).select().single();
+    
+    if (error) {
+      console.error('❌ Error starting trip:', error);
       return { data: null, error: { message: error.message } };
     }
-  },
+    return { data, error: null };
+  } catch (error) { 
+    console.error('❌ Exception in startTrip:', error);
+    return { data: null, error: { message: error.message } }; 
+  }
+},
   // End trip - verify device ID
   endTrip: async (tripId, endData) => {
     try {
